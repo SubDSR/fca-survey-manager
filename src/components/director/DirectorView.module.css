@@ -21,3 +21,15 @@
 .kpiGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
 
 .chartsGrid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 16px; }
+
+/* Barra de exportación (Excel / PDF) de la vista general. */
+.printBar { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.btnPrimary {
+  background: var(--blue); color: #fff; border: none; padding: 10px 18px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 4px rgba(156, 31, 6, 0.2); font-family: 'Inter', sans-serif;
+}
+.btnPrimary:hover { background: #7a1805; }
+.btnPrimary:disabled { opacity: .6; cursor: default; }
+.excelBtn { background: #217346; box-shadow: 0 2px 4px rgba(33, 115, 70, 0.3); }
+.excelBtn:hover { background: #1a5c38; }
