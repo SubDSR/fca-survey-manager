@@ -26,17 +26,22 @@ export default function App() {
   // poder cambiar de vista y cerrar el modal, y useDocenteSelection la consume
   // mediante un efecto con guarda por identidad (ver hooks/useDocenteSelection.js).
   const handleVerDetalle = (group) => {
-    setPendingDocenteSelection({ programa: group.programa, docente: group.docente, curso: group.curso });
+    setPendingDocenteSelection({
+      programa: group.programa, docente: group.docente,
+      curso: group.curso, ciclo: group.ciclo, seccion: group.seccion,
+    });
     setView('docente');
     closeModal();
   };
 
-  // Portado desde reference (líneas 1815-1824): clic en el nombre del docente de
-  // la tabla "Detalle por docente / curso" lleva a la Vista Docente Individual con
-  // ese profesor preseleccionado. El original limpia el curso (curso=''), así que
-  // la vista muestra el primer curso del docente por defecto.
+  // Clic en el nombre del docente de la tabla "Detalle por docente / curso": lleva
+  // a la Vista Docente Individual abriendo EXACTAMENTE ese grupo (curso·ciclo·
+  // sección) en el filtro de curso (Fase 2.2), sin caer en la primera opción.
   const handleSelectDocente = (group) => {
-    setPendingDocenteSelection({ programa: group.programa, docente: group.docente, curso: '' });
+    setPendingDocenteSelection({
+      programa: group.programa, docente: group.docente,
+      curso: group.curso, ciclo: group.ciclo, seccion: group.seccion,
+    });
     setView('docente');
   };
 

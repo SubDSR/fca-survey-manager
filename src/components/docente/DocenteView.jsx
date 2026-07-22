@@ -32,7 +32,9 @@ import styles from './DocenteView.module.css';
 
 export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDocenteSelection }) {
   const { rows, criteriaLabels, directiveLabels, shortCriteriaLabels } = useData();
-  const { sel, setSel, options, docenteRows, cursoRows } = useDocenteSelection(rows, pendingDocenteSelection);
+  const { sel, cursoLabel, setSel, options, docenteRows, cursoRows } = useDocenteSelection(rows, pendingDocenteSelection);
+  // Etiqueta legible del curso para el PDF/Excel ('' cuando es "Todos los cursos").
+  const cursoDisplay = sel.curso ? cursoLabel : '';
   const [tab, setTab] = useState('resumen');
   const [exporting, setExporting] = useState(false);
 
@@ -48,7 +50,7 @@ export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDo
       await exportToExcel({
         programa: sel.programa,
         docente: sel.selected,
-        curso: sel.curso,
+        curso: cursoDisplay,
         rows: cursoRows,
         allDocenteRows: docenteRows,
         criteriaLabels,
@@ -65,7 +67,7 @@ export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDo
 
   return (
     <div className={styles.docenteView}>
-      <PrintHeader docente={sel.selected} curso={sel.curso} />
+      <PrintHeader docente={sel.selected} curso={cursoDisplay} />
 
       <Selectors sel={sel} options={options} onChange={setSel} />
 

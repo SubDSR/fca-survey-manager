@@ -28,7 +28,7 @@ export default function Selectors({ sel, options, onChange }) {
       <FilterSelect
         label="Curso"
         value={sel.curso}
-        options={[{ value: '', label: 'Todos sus cursos' }, ...options.curso.map((v) => ({ value: v, label: v }))]}
+        options={[{ value: '', label: 'Todos los cursos' }, ...options.curso]}
         onChange={(value) => onChange('curso', value)}
       />
       <div className={`${filterStyles.filterGroup} ${styles.filterGroupChecks}`}>
