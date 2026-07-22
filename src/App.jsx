@@ -31,11 +31,31 @@ export default function App() {
     closeModal();
   };
 
+  // Portado desde reference (líneas 1815-1824): clic en el nombre del docente de
+  // la tabla "Detalle por docente / curso" lleva a la Vista Docente Individual con
+  // ese profesor preseleccionado. El original limpia el curso (curso=''), así que
+  // la vista muestra el primer curso del docente por defecto.
+  const handleSelectDocente = (group) => {
+    setPendingDocenteSelection({ programa: group.programa, docente: group.docente, curso: '' });
+    setView('docente');
+  };
+
+  // Cambio de vista MANUAL desde el toggle superior: se descarta cualquier
+  // selección pendiente para que las vistas se monten "en limpio". Así, al
+  // alternar entre Director de Carrera y Docente Individual los valores no se
+  // conservan (cada vista se remonta con su estado inicial). La navegación por
+  // clic (handleVerDetalle / handleSelectDocente) llama a setView directamente,
+  // sin pasar por aquí, para sí llevar la selección al montar la vista Docente.
+  const handleViewChange = (nextView) => {
+    setPendingDocenteSelection(null);
+    setView(nextView);
+  };
+
   return (
     <>
       <Topbar
         view={view}
-        onViewChange={setView}
+        onViewChange={handleViewChange}
         showToggle={status === 'ready'}
         onOpenExcluded={() => openModal('excluded', null)}
       />
@@ -43,7 +63,7 @@ export default function App() {
         {status === 'ready' && view === 'director' && (
           <DirectorView
             onOpenSeguimiento={(groups) => openModal('seguimiento', groups)}
-            onOpenCurso={(group) => openModal('curso', group)}
+            onSelectDocente={handleSelectDocente}
           />
         )}
         {status === 'ready' && view === 'docente' && (
