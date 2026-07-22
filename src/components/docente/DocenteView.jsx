@@ -1,0 +1,114 @@
+import { useMemo, useState } from 'react';
+import { useData } from '../../context/DataContext.jsx';
+import { useDocenteSelection } from '../../hooks/useDocenteSelection.js';
+import { exportToExcel } from '../../lib/excel.js';
+import PrintHeader from '../common/PrintHeader.jsx';
+import Selectors from './Selectors.jsx';
+import DocenteHeader from './DocenteHeader.jsx';
+import DocenteTabs from './DocenteTabs.jsx';
+import RadarPanel from './RadarPanel.jsx';
+import DirectivesChecklist from './DirectivesChecklist.jsx';
+import CoursePieChart from './CoursePieChart.jsx';
+import CoursesTable from './CoursesTable.jsx';
+import RawResponsesTable from './RawResponsesTable.jsx';
+import PrintStatBox from './PrintStatBox.jsx';
+import styles from './DocenteView.module.css';
+
+/* Portado desde reference/dashboard_evaluacion_docente.html: renderDocenteView
+   (líneas 2453-2480) + markup de la sección #docenteView (líneas 682-785).
+   El botón Excel se conecta en la Tarea 13 (exportToExcel, src/lib/excel.js).
+
+   Tarea 14 (impresión/PDF): el reference mantiene #tabResumen y #tabRespuestas
+   siempre presentes en el DOM y usa `@media print { #tabResumen, #tabRespuestas
+   { display:block !important; } }` (línea 502) para que el PDF incluya ambas
+   secciones sin importar qué pestaña esté activa en pantalla ("Plantilla fija").
+   Para replicar eso con las pestañas controladas por estado de React, ambos
+   paneles se montan siempre y el que no está activo se oculta en pantalla con
+   `style={{ display: 'none' }}` (no con render condicional); las reglas de
+   impresión en global.css fuerzan `display: block !important` sobre
+   `.tab-resumen`/`.tab-respuestas`, lo que gana sobre el `display:none` inline
+   porque una declaración `!important` de la hoja de estilos vence a un estilo
+   inline no-important. */
+
+export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDocenteSelection }) {
+  const { rows, criteriaLabels, directiveLabels, shortCriteriaLabels } = useData();
+  const { sel, setSel, options, docenteRows, cursoRows } = useDocenteSelection(rows, pendingDocenteSelection);
+  const [tab, setTab] = useState('resumen');
+  const [exporting, setExporting] = useState(false);
+
+  const first = cursoRows[0] || null;
+  const programaRows = useMemo(() => (
+    first ? rows.filter((r) => r.programa === first.programa) : []
+  ), [rows, first]);
+
+  const handleExportExcel = async () => {
+    if (!sel.selected || cursoRows.length === 0 || exporting) return;
+    setExporting(true);
+    try {
+      await exportToExcel({
+        programa: sel.programa,
+        docente: sel.selected,
+        curso: sel.curso,
+        rows: cursoRows,
+        allDocenteRows: docenteRows,
+        criteriaLabels,
+        directiveLabels,
+        shortCriteriaLabels,
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Ocurrió un error al generar el archivo Excel.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className={styles.docenteView}>
+      <PrintHeader docente={sel.selected} curso={sel.curso} />
+
+      <Selectors sel={sel} options={options} onChange={setSel} />
+
+      <DocenteHeader selected={sel.selected} cursoRows={cursoRows} programaRows={programaRows} />
+
+      <PrintStatBox cursoRows={cursoRows} programaRows={programaRows} criteriaLabels={criteriaLabels} />
+
+      <DocenteTabs active={tab} onChange={setTab} />
+
+      <div className="tab-resumen" style={{ display: tab === 'resumen' ? undefined : 'none' }}>
+        <div className={`charts-grid ${styles.chartsGrid}`}>
+          <RadarPanel
+            cursoRows={cursoRows}
+            programaRows={programaRows}
+            shortCriteriaLabels={shortCriteriaLabels}
+            nCrit={criteriaLabels.length}
+            onOpenCriteriaInfo={onOpenCriteriaInfo}
+          />
+          <DirectivesChecklist cursoRows={cursoRows} directiveLabels={directiveLabels} />
+        </div>
+
+        <CoursePieChart cursoRows={cursoRows} curso={sel.curso} />
+
+        <CoursesTable docenteRows={docenteRows} onOpenCurso={onOpenCurso} />
+      </div>
+
+      <div className="tab-respuestas" style={{ display: tab === 'respuestas' ? undefined : 'none' }}>
+        <RawResponsesTable cursoRows={cursoRows} criteriaLabels={criteriaLabels} directiveLabels={directiveLabels} />
+      </div>
+
+      <div className={`no-print ${styles.printBar}`}>
+        <button
+          type="button"
+          className={`${styles.btnPrimary} ${styles.excelBtn}`}
+          onClick={handleExportExcel}
+          disabled={!sel.selected || cursoRows.length === 0 || exporting}
+        >
+          {exporting ? 'Generando Excel...' : 'Descargar Excel (Formato Oficial)'}
+        </button>
+        <button type="button" className={styles.btnPrimary} onClick={() => window.print()}>
+          Imprimir / Exportar a PDF
+        </button>
+      </div>
+    </div>
+  );
+}
