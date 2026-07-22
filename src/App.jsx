@@ -40,11 +40,22 @@ export default function App() {
     setView('docente');
   };
 
+  // Cambio de vista MANUAL desde el toggle superior: se descarta cualquier
+  // selección pendiente para que las vistas se monten "en limpio". Así, al
+  // alternar entre Director de Carrera y Docente Individual los valores no se
+  // conservan (cada vista se remonta con su estado inicial). La navegación por
+  // clic (handleVerDetalle / handleSelectDocente) llama a setView directamente,
+  // sin pasar por aquí, para sí llevar la selección al montar la vista Docente.
+  const handleViewChange = (nextView) => {
+    setPendingDocenteSelection(null);
+    setView(nextView);
+  };
+
   return (
     <>
       <Topbar
         view={view}
-        onViewChange={setView}
+        onViewChange={handleViewChange}
         showToggle={status === 'ready'}
         onOpenExcluded={() => openModal('excluded', null)}
       />
