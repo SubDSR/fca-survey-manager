@@ -1,0 +1,16 @@
+/* Portado desde reference/dashboard_evaluacion_docente.html (líneas 132-137, 195, 267-268). */
+
+.modalEmpty { padding: 30px 4px; text-align: center; color: var(--text-soft); font-size: 13px; }
+
+.infoNote { color: var(--text-soft); font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
+
+.tableResponsive { overflow-x: auto; width: 100%; }
+.tableResponsive table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tableResponsive th {
+  text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--text-soft); border-bottom: 2px solid var(--border); padding: 8px; white-space: nowrap; font-weight: 600;
+}
+.tableResponsive td { padding: 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+
+.deltaPos { color: var(--green); font-weight: 700; }
+.deltaNeg { color: var(--red); font-weight: 700; }

@@ -1,0 +1,146 @@
+/* Portado desde reference/dashboard_evaluacion_docente.html (Vista Docente):
+   .filters-bar / .docente-select-bar / .estado-checks: líneas 105-110, 290-299
+   .docente-header y derivados: líneas 300-362
+   .directives-list y derivados: líneas 364-377
+   .docente-tabs: líneas 380-407
+   #rawResponsesTable (sticky primera columna): líneas 409-436
+   .print-bar / .btn-primary: líneas 438-444
+   .empty-state: línea 446
+   .charts-grid: línea 257 (compartida con Vista Director, duplicada aquí por
+   convención de módulos CSS por vista, igual que DirectorView.module.css). */
+
+.filtersBar {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.docenteSelectBar { margin-bottom: 0; }
+.filterGroupChecks { justify-content: flex-end; }
+.estadoChecks { display: flex; align-items: center; gap: 14px; height: 38px; }
+.estadoCheckLabel {
+  display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text);
+  cursor: pointer; white-space: nowrap;
+}
+.estadoCheckLabel input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
+
+.docenteHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-top: 16px; }
+.docenteId { flex: 1 1 auto; min-width: 0; }
+.docenteIdTop { display: flex; align-items: center; gap: 14px; }
+.docenteAvatar {
+  flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800;
+  letter-spacing: .02em;
+}
+.docenteAvatar.placeholder { background: var(--border); color: var(--text-soft); }
+.docenteId h2 { font-size: 21px; line-height: 1.2; }
+.docenteCategoryPill {
+  display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em;
+}
+.docenteCategoryPill.contratado { background: var(--yellow-bg); color: #8a6d00; }
+.docenteCategoryPill.nombrado { background: var(--green-bg); color: #1e7e34; }
+.docenteCategoryPill.nombrado-of { background: #E4EEFB; color: #1D4ED8; }
+.docenteFacultadTag { display: inline-block; margin-top: 4px; margin-left: 8px; font-size: 11.5px; color: var(--text-soft); }
+.docenteFacultadTag b { color: var(--text); }
+.docenteMetaPills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.metaPill {
+  display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 600; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  white-space: nowrap;
+}
+.metaPill b { font-weight: 800; }
+.metaPill.cursoPill { background: var(--blue-light); color: var(--blue); border-color: transparent; font-weight: 700; }
+.metaPill.accent { background: #E4EEFB; color: #1D4ED8; border-color: transparent; font-weight: 700; }
+
+.docenteScore { flex: none; display: flex; align-items: center; gap: 18px; white-space: nowrap; }
+.scoreBox { text-align: center; }
+.scoreValue { font-size: 34px; font-weight: 800; color: var(--blue); }
+.scoreLabel { font-size: 11px; color: var(--text-soft); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+.deltaChip { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.deltaChip.pos { background: var(--green-bg); color: var(--green); }
+.deltaChip.neg { background: var(--red-bg); color: var(--red); }
+.deltaChip.neu { background: var(--yellow-bg); color: var(--yellow); }
+
+@media (max-width: 700px) {
+  .docenteHeader { flex-direction: column; }
+  .docenteScore { align-self: flex-start; }
+}
+
+.docenteHeaderPlaceholder { display: flex; align-items: center; gap: 16px; padding: 8px 4px; width: 100%; }
+.placeholderText { font-size: 17px; color: var(--text-soft); font-weight: 700; }
+.placeholderSub { font-size: 13px; color: var(--text-soft); margin-top: 4px; }
+
+.scoreStatusWrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 2px; }
+.estadoChip { padding: 9px 26px; border-radius: 10px; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.estadoChip.aprobado { background: var(--green-bg); color: #1e7e34; }
+.estadoChip.desaprobado { background: var(--red-bg); color: #b3261e; }
+
+.emptyState { padding: 40px; text-align: center; color: var(--text-soft); font-size: 13px; }
+
+.chartsGrid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 16px; }
+
+.btnMoreInfo {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 10px;
+  background: none; border: none; color: var(--blue); font-size: 12px; font-weight: 700;
+  cursor: pointer; padding: 0; font-family: 'Inter', sans-serif;
+}
+.btnMoreInfo:hover { text-decoration: underline; }
+
+.directivesList { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.directiveRow .directiveName { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.directiveRow .directiveName .pct { color: var(--text-soft); font-weight: 600; }
+.stackedMini { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--border); }
+.stackedMini div { height: 100%; }
+.stackedMini .si { background: var(--green); }
+.stackedMini .no { background: var(--red); }
+.stackedMini .av { background: var(--yellow); }
+.miniLegend { display: flex; gap: 14px; font-size: 11px; color: var(--text-soft); margin-top: 10px; }
+.miniLegend span { display: flex; align-items: center; gap: 5px; }
+.miniLegend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.miniLegend .si i { background: var(--green); }
+.miniLegend .no i { background: var(--red); }
+.miniLegend .av i { background: var(--yellow); }
+.directivesPieWrap { margin-top: 16px; height: 140px; border-top: 1px solid var(--border); padding-top: 16px; }
+
+.pieChartCard { margin-top: 16px; max-width: 500px; margin-left: auto; margin-right: auto; }
+.pieChartCard h3 { text-align: center; }
+.pieChartCard p { text-align: center; }
+
+.docenteTabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-top: 10px; margin-bottom: 20px; }
+.docenteTabs button {
+  background: none; border: none; padding: 12px 4px; font-size: 14px; font-weight: 600;
+  color: var(--text-soft); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px;
+  font-family: 'Inter', sans-serif; transition: all 0.2s ease;
+}
+.docenteTabs button.active { color: var(--blue); border-bottom-color: var(--blue); }
+.docenteTabs button:hover:not(.active) { color: var(--text); border-bottom-color: var(--border); }
+
+.clickableCurso { color: var(--blue); cursor: pointer; font-weight: 600; text-decoration: underline; }
+.tableBarWrapper { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 90px; }
+.tableBarBg { flex-grow: 1; background-color: var(--border); height: 6px; border-radius: 3px; overflow: hidden; position: relative; }
+.tableBarFill { height: 100%; border-radius: 3px; position: absolute; left: 0; top: 0; transition: width 0.3s ease; }
+.tableBarFill.blue { background-color: var(--blue); }
+.tableBarFill.green { background-color: var(--green); }
+.tableBarValue { font-weight: 600; font-size: 13px; width: 35px; text-align: right; }
+
+.rawResponsesTable th:first-child { position: sticky; left: 0; background-color: var(--card); z-index: 3; border-right: 1px solid var(--border); min-width: 350px; }
+.rawResponsesTable td:first-child { position: sticky; left: 0; background-color: var(--card); z-index: 2; border-right: 1px solid var(--border); }
+.rawResponsesTable tbody tr:nth-child(even) td:first-child { background-color: #F8FAFC; }
+.rawResponsesTable tbody tr:hover td:first-child { background-color: #F1F5F9; }
+.rawResponsesTable thead th { cursor: default; text-align: center; }
+.rawResponsesTable thead th:first-child { text-align: left; }
+.sectionRow td { background-color: var(--blue-light); font-weight: 700; }
+.sectionRow td:first-child { background-color: var(--blue-light); border-right: 1px solid var(--border); z-index: 2; }
+.centerCell { text-align: center; }
+.rawEmptyCell { text-align: center; padding: 20px; color: var(--text-soft); }
+
+.printBar { display: flex; justify-content: flex-end; margin-top: 16px; }
+.btnPrimary {
+  background: var(--blue); color: #fff; border: none; padding: 10px 18px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 4px rgba(156, 31, 6, 0.2);
+}
+.btnPrimary:hover { background: #7a1805; }
+.excelBtn { background: #217346; margin-right: 12px; box-shadow: 0 2px 4px rgba(33, 115, 70, 0.3); }
+.excelBtn:hover { background: #1a5c38; }
