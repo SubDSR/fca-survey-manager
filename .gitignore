@@ -6,3 +6,6 @@ dist
 
 # Carpeta de trabajo de superpowers (SDD / ledger), no debe versionarse
 .superpowers/
+
+# Documentación interna de superpowers (specs/plans), no se versiona
+docs/superpowers/
