@@ -1,0 +1,133 @@
+:root{
+  --bg:#F4F7FB; --card:#FFFFFF; --border:#E0E6ED; --text:#334155; --text-soft:#64748B;
+  --blue:#9C1F06; --blue-light:#F8E9E7; --green:#34A853; --green-bg:#E6F4EA;
+  --yellow:#FBBC05; --yellow-bg:#FEF7E0; --red:#EA4335; --red-bg:#FCE8E6; --radius:8px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg); color:var(--text);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{margin:0;font-weight:700;}
+p{margin:0;}
+
+/* ---------- Print Formatting (Tarea 14) ---------- */
+/* Portado desde reference/dashboard_evaluacion_docente.html, bloque
+   `@media print` del <style> original (líneas 450-547), adaptado a CSS
+   Modules: los componentes React usan clases de módulo con nombres
+   ofuscados en build, así que no se puede reutilizar selectores globales
+   como `.card`/`.chart-card`/`.topbar` directamente. En su lugar, los
+   componentes relevantes añaden clases planas (no-módulo) junto a las de
+   módulo -- `card`, `chart-card`, `table-card`, `docente-header`,
+   `charts-grid`, `raw-responses-table`, `tab-resumen`, `tab-respuestas` -- y
+   se agrega el helper genérico `.no-print` (sugerido en la Tarea 14) para
+   ocultar controles interactivos (topbar, filtros, pestañas, botón "más
+   información", overlays de modal, barra de botones Excel/Imprimir).
+   Los selectores de etiqueta (body, main, table, th, td) sí funcionan sin
+   cambios porque no dependen de nombres de clase. */
+
+.print-header { display: none; }
+.print-footer { display: none; }
+.print-stat-box { display: none; }
+
+@media print {
+  @page { size: landscape; margin: 14mm 15mm 18mm; }
+
+  .print-header {
+    display: flex !important;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    border-bottom: 3px solid #9C1F06;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .print-header img { height: 46px; flex: none; }
+  .print-header .print-header-text { flex: 1; }
+  .print-header h2 { font-size: 18px; text-transform: uppercase; margin: 0; color: #111; letter-spacing: 0.04em; font-weight: 800; }
+  .print-header .print-subtitle { font-size: 13px; color: #9C1F06; font-weight: 700; margin: 3px 0 0; }
+  .print-header p { font-size: 11.5px; color: #444; margin: 3px 0 0; }
+  .print-header .print-header-right { text-align: right; font-size: 10.5px; color: #555; flex: none; }
+
+  .print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 9px;
+    color: #777;
+    border-top: 1px solid #ccc;
+    padding-top: 4px;
+    background: #fff;
+  }
+
+  /* Oculta toda la interfaz interactiva: topbar, selectores/filtros,
+     pestañas, botón "más información", overlays de modal y la barra de
+     botones Excel/Imprimir (equivalente a .topbar, .filters-bar, .btn-reset,
+     .docente-tabs, .view-toggle, .upload, .alert-banner, .modal-overlay,
+     .btn-more-info del reference, líneas 487). */
+  .no-print { display: none !important; }
+
+  body { background: #fff; color: #000; font-size: 11.5px; }
+  main { max-width: 100%; padding: 0; }
+
+  .card { border: 1px solid #ddd !important; box-shadow: none !important; padding: 14px 16px; break-inside: avoid; margin-bottom: 16px; border-radius: 4px !important; }
+  .chart-card h3 { color: #111; font-size: 14px; margin-bottom: 4px; border-bottom: 2px solid #9C1F06; padding-bottom: 6px; display: inline-block; }
+  .chart-card { page-break-inside: avoid; }
+  .charts-grid { page-break-inside: avoid; }
+
+  .docente-header { page-break-after: avoid; }
+  .table-card { page-break-before: auto; }
+
+  /* Evita que las tablas anchas (p.ej. Detalle de Encuestados con muchas
+     columnas E1..En) se recorten al imprimir por el overflow del scroll. */
+  .table-responsive { overflow: visible !important; }
+  /* Contrarresta el salto de página forzado de .tab-respuestas para que la
+     tabla no quede separada de su encabezado de sección. */
+  .tab-respuestas .table-card { page-break-before: avoid; }
+
+  /* Plantilla fija: en el PDF siempre se incluyen ambas secciones (Resumen y
+     Detalle de Encuestados) completas, sin importar cuál pestaña esté activa
+     en pantalla (ver comentario en DocenteView.jsx). */
+  .tab-resumen, .tab-respuestas { display: block !important; }
+  .tab-respuestas { page-break-before: always; }
+  .tab-respuestas::before {
+    content: "Detalle de Encuestados";
+    display: block; font-size: 15px; font-weight: 800; color: #111;
+    border-bottom: 3px solid #9C1F06; padding-bottom: 8px; margin-bottom: 16px;
+  }
+
+  /* Estadísticas de referencia estilo "reporte formal" (renderPrintStatBox). */
+  .print-stat-box {
+    display: block !important;
+    border: 1px solid #ccc; border-radius: 6px; background: #FAFAFA;
+    padding: 10px 14px; margin-top: 10px; font-size: 11px;
+  }
+  .print-stat-box .stat-title { font-weight: 800; color: #111; text-transform: uppercase; font-size: 10px; letter-spacing: .03em; margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .print-stat-box table { width: 100%; }
+  .print-stat-box td { border: none !important; padding: 2px 4px !important; }
+  .print-stat-box td.label { color: #555; }
+  .print-stat-box td.value { text-align: right; font-weight: 700; }
+
+  table { border-collapse: collapse; border: 1px solid #bbb; width: 100%; }
+  th, td { border: 1px solid #ccc !important; padding: 7px 9px; }
+  th { background-color: #9C1F06 !important; color: #fff !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tbody tr:nth-child(even) td { background: #FAFAFA !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Resalta filas críticas (nota baja) en tablas de detalle al imprimir */
+  tr.print-flag-row td { background: #FDECEA !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Quita el sticky de la primera columna de la tabla de encuestados
+     individuales para evitar artefactos de renderizado al imprimir. */
+  .raw-responses-table th:first-child,
+  .raw-responses-table td:first-child {
+    position: static !important;
+    border: 1px solid #ccc !important;
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .raw-responses-table tr:nth-child(even) td {
+    background: #f9f9f9 !important;
+  }
+}

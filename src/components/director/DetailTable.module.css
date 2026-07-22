@@ -1,0 +1,24 @@
+/* Portado desde reference/dashboard_evaluacion_docente.html
+   (.table-header: línea 264; .table-bar-*: líneas 282-287; clickable-docente: línea 1788). */
+
+.tableHeader {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.tableHeader h3 { font-size: 14px; }
+.tableHeader input {
+  border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+  font-size: 13px; color: var(--text); background: #fff;
+  font-family: 'Inter', sans-serif;
+}
+.tableHeader input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+.row { cursor: pointer; }
+.clickableDocente { color: var(--blue); font-weight: 600; text-decoration: underline; }
+
+.tableBarWrapper { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 90px; }
+.tableBarBg { flex-grow: 1; background-color: var(--border); height: 6px; border-radius: 3px; overflow: hidden; position: relative; }
+.tableBarFill { height: 100%; border-radius: 3px; position: absolute; left: 0; top: 0; transition: width 0.3s ease; }
+.tableBarFill.blue { background-color: var(--blue); }
+.tableBarFill.green { background-color: var(--green); }
+.tableBarValue { font-weight: 600; font-size: 13px; width: 35px; text-align: right; }
