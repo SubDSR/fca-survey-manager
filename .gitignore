@@ -3,3 +3,6 @@ dist
 .vite
 *.local
 .DS_Store
+
+# Carpeta de trabajo de superpowers (SDD / ledger), no debe versionarse
+.superpowers/
