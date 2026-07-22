@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getDocenteCategoria } from '../data/docenteCategoria.js';
 import { CATEGORIA_ORDER } from '../data/constants.js';
 import { uniqueSorted } from '../lib/groups.js';
+
+// La categoría de cada docente viene enriquecida en la fila (row.categoria)
+// desde el roster (public/docentes.csv), cargado en DataContext.
+const rowCategoria = (r) => r.categoria || 'Sin categoría';
 
 /* Portado desde reference/dashboard_evaluacion_docente.html:
    - cascada programa -> categoría -> docente -> curso + checks de estado:
@@ -74,11 +77,11 @@ export function useDocenteSelection(rows, pendingSelection) {
     const programa = uniqueSorted(rows, 'programa');
     const rowsProg = rows.filter((r) => !sel.programa || r.programa === sel.programa);
 
-    const categoriasDisponibles = new Set(rowsProg.map((r) => getDocenteCategoria(r.docente)));
+    const categoriasDisponibles = new Set(rowsProg.map(rowCategoria));
     const categoria = CATEGORIA_ORDER.filter((c) => categoriasDisponibles.has(c));
     const effectiveCategoria = categoria.includes(sel.categoria) ? sel.categoria : '';
 
-    const rowsProgCat = rowsProg.filter((r) => !effectiveCategoria || getDocenteCategoria(r.docente) === effectiveCategoria);
+    const rowsProgCat = rowsProg.filter((r) => !effectiveCategoria || rowCategoria(r) === effectiveCategoria);
 
     // Filtro por Estado (Aprobado / Desaprobado), según el promedio general del
     // docente (Nota Dim I >= 14) dentro del alcance programa+categoría.
