@@ -30,3 +30,8 @@ export const LABEL_MAP = {
 };
 
 export const CATEGORIA_ORDER = ['Nombrado', 'Nombrado - OF', 'Contratado'];
+
+// Slug de la categoría para el nombre de clase CSS de la píldora (Docente).
+export function categoriaSlug(categoria) {
+  return String(categoria || '').toLowerCase().replace(/\s*-\s*/g, '-').replace(/\s+/g, '-');
+}

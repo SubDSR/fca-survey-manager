@@ -1,6 +1,5 @@
 import Card from '../common/Card.jsx';
-import { getDocenteCategoria, categoriaSlug } from '../../data/docenteCategoria.js';
-import { getDocenteFacultad } from '../../data/docenteFacultad.js';
+import { categoriaSlug } from '../../data/constants.js';
 import { uniqueSorted } from '../../lib/groups.js';
 import styles from './DocenteView.module.css';
 
@@ -45,8 +44,9 @@ export default function DocenteHeader({ selected, cursoRows, programaRows }) {
   const ciclos = uniqueSorted(cursoRows, 'ciclo');
   const secciones = uniqueSorted(cursoRows, 'seccion');
   const aulas = uniqueSorted(cursoRows, 'aula');
-  const categoria = getDocenteCategoria(first.docente);
-  const facultadOrigen = categoria === 'Nombrado - OF' ? getDocenteFacultad(first.docente) : null;
+  // categoría y facultad vienen enriquecidas en la fila desde el roster (docentes.csv).
+  const categoria = first.categoria || 'Sin categoría';
+  const facultadOrigen = categoria === 'Nombrado - OF' ? first.facultad : null;
 
   const notaDocente = cursoRows.reduce((a, r) => a + r.notaFinal, 0) / cursoRows.length;
   const notaPrograma = programaRows.length
