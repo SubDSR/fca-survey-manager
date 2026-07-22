@@ -109,6 +109,13 @@ export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDo
           Imprimir / Exportar a PDF
         </button>
       </div>
+
+      {/* Acotación al pie (visible también en el PDF): recuerda que los cálculos
+          dependen de los filtros activos. Portado del HTML original. */}
+      <p className={styles.docenteFootnote}>
+        Los porcentajes y promedios se calculan sobre las encuestas que cumplen los filtros
+        activos. Verifique siempre el N° de encuestas antes de interpretar un resultado.
+      </p>
     </div>
   );
 }

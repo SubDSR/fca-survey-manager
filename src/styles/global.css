@@ -109,6 +109,9 @@ p{margin:0;}
   .print-stat-box td { border: none !important; padding: 2px 4px !important; }
   .print-stat-box td.label { color: #555; }
   .print-stat-box td.value { text-align: right; font-weight: 700; }
+  /* En la tabla de criterios solo "Su promedio" va en negrita; las demás notas
+     (Prom. programa, Diferencia, Rango, N°) en peso normal para no diluir el énfasis. */
+  .print-stat-box td.value.soft { font-weight: 400; }
 
   table { border-collapse: collapse; border: 1px solid #bbb; width: 100%; }
   th, td { border: 1px solid #ccc !important; padding: 7px 9px; }
