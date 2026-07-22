@@ -13,8 +13,8 @@
 }
 .tableHeader input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 
-.row { cursor: pointer; }
-.clickableDocente { color: var(--blue); font-weight: 600; text-decoration: underline; }
+.clickableDocente { color: var(--blue); font-weight: 600; text-decoration: underline; cursor: pointer; }
+.clickableDocente:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
 
 .tableBarWrapper { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 90px; }
 .tableBarBg { flex-grow: 1; background-color: var(--border); height: 6px; border-radius: 3px; overflow: hidden; position: relative; }

@@ -6,8 +6,9 @@ import { normKey } from '../../lib/csv.js';
 import styles from './DetailTable.module.css';
 
 /* Portado desde reference/dashboard_evaluacion_docente.html: renderDetailTable (líneas 1765-1826)
-   + markup de la tabla (líneas 656-679). La fila completa es clickeable (a diferencia del original,
-   que solo hacía clickeable la celda de docente) según lo pedido en el brief de la tarea. */
+   + markup de la tabla (líneas 656-679). Igual que el original, sólo el nombre del docente es
+   clickeable y lleva a la Vista Docente Individual con ese profesor preseleccionado
+   (listener de .clickable-docente en líneas 1815-1824). */
 
 const COLUMNS = [
   { key: 'docente', label: 'Docente' },
@@ -21,7 +22,7 @@ const COLUMNS = [
   { key: 'n', label: 'N° Encuestas' }
 ];
 
-export default function DetailTable({ groups, search, onSearchChange, sort, onSort, onOpenCurso }) {
+export default function DetailTable({ groups, search, onSearchChange, sort, onSort, onSelectDocente }) {
   const rows = useMemo(() => {
     const term = normKey(search);
     let filtered = groups.filter((g) => {
@@ -61,12 +62,19 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
         onSort={onSort}
         emptyMessage="No se encontraron resultados para los filtros seleccionados."
         renderRow={(g) => (
-          <tr
-            key={[g.docente, g.curso, g.programa, g.ciclo, g.seccion, g.aula].join('|||')}
-            className={styles.row}
-            onClick={() => onOpenCurso(g)}
-          >
-            <td className={styles.clickableDocente}>{g.docente}</td>
+          <tr key={[g.docente, g.curso, g.programa, g.ciclo, g.seccion, g.aula].join('|||')}>
+            <td
+              className={styles.clickableDocente}
+              role="button"
+              tabIndex={0}
+              title="Ver desempeño individual de este docente"
+              onClick={() => onSelectDocente(g)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDocente(g); }
+              }}
+            >
+              {g.docente}
+            </td>
             <td>{g.programa}</td>
             <td>{g.ciclo}</td>
             <td>{g.seccion}</td>

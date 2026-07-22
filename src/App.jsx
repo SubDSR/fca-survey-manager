@@ -31,6 +31,15 @@ export default function App() {
     closeModal();
   };
 
+  // Portado desde reference (líneas 1815-1824): clic en el nombre del docente de
+  // la tabla "Detalle por docente / curso" lleva a la Vista Docente Individual con
+  // ese profesor preseleccionado. El original limpia el curso (curso=''), así que
+  // la vista muestra el primer curso del docente por defecto.
+  const handleSelectDocente = (group) => {
+    setPendingDocenteSelection({ programa: group.programa, docente: group.docente, curso: '' });
+    setView('docente');
+  };
+
   return (
     <>
       <Topbar
@@ -43,7 +52,7 @@ export default function App() {
         {status === 'ready' && view === 'director' && (
           <DirectorView
             onOpenSeguimiento={(groups) => openModal('seguimiento', groups)}
-            onOpenCurso={(group) => openModal('curso', group)}
+            onSelectDocente={handleSelectDocente}
           />
         )}
         {status === 'ready' && view === 'docente' && (

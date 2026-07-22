@@ -14,7 +14,7 @@ import styles from './DirectorView.module.css';
 /* Portado desde reference/dashboard_evaluacion_docente.html: renderDirectorView (líneas 1827-1837)
    + markup de la sección #directorView (líneas 602-680). */
 
-export default function DirectorView({ onOpenSeguimiento, onOpenCurso }) {
+export default function DirectorView({ onOpenSeguimiento, onSelectDocente }) {
   const { rows, directiveLabels, shortCriteriaLabels } = useData();
   const {
     filters, setFilter, reset, search, setSearch, sort, setSort, filteredRows, options
@@ -44,7 +44,7 @@ export default function DirectorView({ onOpenSeguimiento, onOpenCurso }) {
         onSearchChange={setSearch}
         sort={sort}
         onSort={setSort}
-        onOpenCurso={onOpenCurso}
+        onSelectDocente={onSelectDocente}
       />
     </div>
   );
