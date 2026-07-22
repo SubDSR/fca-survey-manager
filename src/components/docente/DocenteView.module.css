@@ -24,26 +24,60 @@
 }
 .estadoCheckLabel input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
 
-.docenteHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-top: 16px; }
-.docenteId { flex: 1 1 auto; min-width: 0; }
-.docenteIdTop { display: flex; align-items: center; gap: 14px; }
+/* Card de perfil en 3 secciones que ocupan todo el ancho: identidad | nota
+   individual | comparativa con el programa, separadas por divisores. */
+.docenteHeader { display: flex; align-items: stretch; gap: 0; margin-top: 16px; }
+.profileIdentity { flex: 1.5 1 0; display: flex; align-items: center; gap: 16px; min-width: 0; padding-right: 24px; }
+.profileScore { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; border-left: 1px solid var(--border); text-align: center; }
+.profileCompare { flex: 1.3 1 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-left: 24px; border-left: 1px solid var(--border); }
 .docenteAvatar {
-  flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800;
+  flex: none; width: 66px; height: 66px; border-radius: 50%; background: var(--blue); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 23px; font-weight: 800;
   letter-spacing: .02em;
 }
 .docenteAvatar.placeholder { background: var(--border); color: var(--text-soft); }
-.docenteId h2 { font-size: 21px; line-height: 1.2; }
+.docenteIdInfo { min-width: 0; }
+.profileName { font-size: 23px; font-weight: 800; line-height: 1.15; color: var(--text); }
+.profileMeta { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.profileMeta li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.profileMetaLabel { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
+.profileMetaValue { color: var(--text); font-weight: 700; }
 .docenteCategoryPill {
-  display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px;
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
   font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em;
 }
 .docenteCategoryPill.contratado { background: var(--yellow-bg); color: #8a6d00; }
 .docenteCategoryPill.nombrado { background: var(--green-bg); color: #1e7e34; }
 .docenteCategoryPill.nombrado-of { background: #E4EEFB; color: #1D4ED8; }
-.docenteFacultadTag { display: inline-block; margin-top: 4px; margin-left: 8px; font-size: 11.5px; color: var(--text-soft); }
-.docenteFacultadTag b { color: var(--text); }
-.docenteMetaPills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* Botón "Ver Perfil Detallado" (placeholder para futuro modal del docente). */
+.btnProfile {
+  display: inline-block; margin-top: 14px; padding: 8px 16px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s ease;
+}
+.btnProfile:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* Perfil de curso integrado (programa, curso, ciclo/sección + métrica de
+   encuestas) en un contenedor propio debajo del card del docente. Sin aula. */
+.docenteMetaBar {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.metaProfile { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.metaProgramaLabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
+.metaProgramaLabel b { color: var(--text); }
+.metaCursoRow { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.metaSmallLabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
+.metaCursoName { font-size: 18px; font-weight: 800; color: var(--blue); line-height: 1.2; }
+.metaCicloSeccion { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text); flex-wrap: wrap; }
+.metaCicloSeccion b { font-weight: 800; }
+.metaDot { color: var(--text-soft); }
+.metaMetric { flex: none; text-align: center; background: var(--blue-light); border-radius: 10px; padding: 12px 24px; }
+.metaMetricValue { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }
+.metaMetricLabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--blue); margin-top: 5px; }
 .metaPill {
   display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 8px;
   font-size: 12.5px; font-weight: 600; background: var(--bg); border: 1px solid var(--border); color: var(--text);
@@ -53,26 +87,40 @@
 .metaPill.cursoPill { background: var(--blue-light); color: var(--blue); border-color: transparent; font-weight: 700; }
 .metaPill.accent { background: #E4EEFB; color: #1D4ED8; border-color: transparent; font-weight: 700; }
 
-.docenteScore { flex: none; display: flex; align-items: center; gap: 18px; white-space: nowrap; }
-.scoreBox { text-align: center; }
-.scoreValue { font-size: 34px; font-weight: 800; color: var(--blue); }
-.scoreLabel { font-size: 11px; color: var(--text-soft); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
-.deltaChip { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+/* Número grande dentro de un óvalo (nota individual y promedio del programa). */
+.scoreOval {
+  font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1;
+  border: 2px solid var(--border); border-radius: 999px; padding: 8px 26px;
+}
+.scoreOvalSoft { color: var(--text-soft); }
+.scoreLabel { font-size: 11px; color: var(--text-soft); text-transform: uppercase; letter-spacing: .03em; text-align: center; }
+
+.deltaChip { padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; }
 .deltaChip.pos { background: var(--green-bg); color: var(--green); }
 .deltaChip.neg { background: var(--red-bg); color: var(--red); }
 .deltaChip.neu { background: var(--yellow-bg); color: var(--yellow); }
 
-@media (max-width: 700px) {
+/* Barras comparativas Programa vs Docente (escala 0–20) + desviación. */
+.compareBars { width: 100%; max-width: 240px; margin-top: 4px; display: flex; flex-direction: column; gap: 7px; }
+.compareRow { display: flex; align-items: center; gap: 8px; }
+.compareBarLabel { flex: none; width: 62px; font-size: 10.5px; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compareTrack { flex: 1 1 auto; height: 9px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.compareFillProg { height: 100%; background: var(--text-soft); border-radius: 5px; }
+.compareFillDoc { height: 100%; background: var(--blue); border-radius: 5px; }
+.compareDelta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+.compareDeltaLabel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
+
+@media (max-width: 760px) {
   .docenteHeader { flex-direction: column; }
-  .docenteScore { align-self: flex-start; }
+  .profileScore, .profileCompare { border-left: none; border-top: 1px solid var(--border); padding: 16px 0 0; margin-top: 4px; }
+  .profileIdentity { padding-right: 0; }
 }
 
 .docenteHeaderPlaceholder { display: flex; align-items: center; gap: 16px; padding: 8px 4px; width: 100%; }
 .placeholderText { font-size: 17px; color: var(--text-soft); font-weight: 700; }
 .placeholderSub { font-size: 13px; color: var(--text-soft); margin-top: 4px; }
 
-.scoreStatusWrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 2px; }
-.estadoChip { padding: 9px 26px; border-radius: 10px; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.estadoChip { padding: 8px 22px; border-radius: 10px; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
 .estadoChip.aprobado { background: var(--green-bg); color: #1e7e34; }
 .estadoChip.desaprobado { background: var(--red-bg); color: #b3261e; }
 
@@ -136,6 +184,7 @@
 .rawEmptyCell { text-align: center; padding: 20px; color: var(--text-soft); }
 
 .printBar { display: flex; justify-content: flex-end; margin-top: 16px; }
+.docenteFootnote { margin-top: 14px; font-size: 12px; color: var(--text-soft); text-align: center; line-height: 1.5; }
 .btnPrimary {
   background: var(--blue); color: #fff; border: none; padding: 10px 18px; border-radius: var(--radius);
   font-size: 13px; font-weight: 700; cursor: pointer;
