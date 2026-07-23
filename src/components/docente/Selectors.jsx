@@ -1,11 +1,10 @@
-import FilterSelect from '../common/FilterSelect.jsx';
 import SearchableSelect from '../common/SearchableSelect.jsx';
 import filterStyles from '../common/FilterSelect.module.css';
 import styles from './DocenteView.module.css';
 
 /* Portado desde reference/dashboard_evaluacion_docente.html (markup líneas 685-709). */
 
-export default function Selectors({ sel, options, onChange }) {
+export default function Selectors({ sel, options, onChange, actions }) {
   return (
     <div className={`no-print ${styles.filtersBar} ${styles.docenteSelectBar}`}>
       <SearchableSelect
@@ -36,6 +35,7 @@ export default function Selectors({ sel, options, onChange }) {
         onChange={(value) => onChange('curso', value)}
         placeholder="Buscar curso..."
       />
+      {actions && <div className={styles.actionsWrapper}>{actions}</div>}
     </div>
   );
 }

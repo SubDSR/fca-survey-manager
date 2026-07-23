@@ -13,7 +13,6 @@ const COLUMNS = [
   { key: 'curso', label: 'Curso' },
   { key: 'ciclo', label: 'Ciclo' },
   { key: 'seccion', label: 'Sección' },
-  { key: 'aula', label: 'Aula' },
   { key: 'nota', label: 'Nota Dim I' },
   { key: 'cumplimiento', label: '% Cumpl. (Sí)' },
   { key: 'n', label: 'N° Encuestas' }
@@ -27,7 +26,10 @@ export default function CoursesTable({ docenteRows, onOpenCurso }) {
   ), [docenteRows]);
 
   return (
-    <Card title="Cursos dictados por el docente" className={`table-card ${cardStyles.tableCard}`}>
+    <Card 
+      title="Cursos dictados por el docente"
+      className={`table-card ${cardStyles.tableCard}`}
+    >
       <DataTable
         columns={COLUMNS}
         rows={groups}
@@ -43,7 +45,6 @@ export default function CoursesTable({ docenteRows, onOpenCurso }) {
             </td>
             <td>{g.ciclo}</td>
             <td>{g.seccion}</td>
-            <td>{g.aula}</td>
             <td>
               <div className={styles.tableBarWrapper}>
                 <div className={styles.tableBarBg}>

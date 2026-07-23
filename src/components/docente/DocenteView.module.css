@@ -16,6 +16,8 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 .docenteSelectBar { margin-bottom: 0; }
+.actionsWrapper { margin-left: auto; display: flex; align-items: center; }
+.printBarHeader { display: flex; gap: 8px; }
 .filterGroupChecks { justify-content: flex-end; }
 .estadoChecks { display: flex; align-items: center; gap: 14px; height: 38px; }
 .estadoCheckLabel {
@@ -188,13 +190,20 @@
 .centerCell { text-align: center; }
 .rawEmptyCell { text-align: center; padding: 20px; color: var(--text-soft); }
 
-.printBar { display: flex; justify-content: flex-end; margin-top: 16px; }
+.printBar { display: flex; justify-content: flex-end; margin-top: 16px; gap: 10px; align-items: center; }
 .docenteFootnote { margin-top: 14px; font-size: 12px; color: var(--text-soft); text-align: center; line-height: 1.5; }
+
 .btnPrimary {
-  background: var(--blue); color: #fff; border: none; padding: 10px 18px; border-radius: var(--radius);
-  font-size: 13px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 2px 4px rgba(156, 31, 6, 0.2);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: #7A1A2F; color: #fff; border: 1px solid transparent; padding: 8px 16px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.2s ease;
 }
-.btnPrimary:hover { background: #7a1805; }
-.excelBtn { background: #217346; margin-right: 12px; box-shadow: 0 2px 4px rgba(33, 115, 70, 0.3); }
-.excelBtn:hover { background: #1a5c38; }
+.btnPrimary svg { width: 18px; height: 18px; }
+.btnPrimary:hover { background: #5c1424; box-shadow: 0 2px 6px rgba(122, 26, 47, 0.3); }
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.excelBtn {
+  background: #ecfdf5; color: #059669; border-color: #a7f3d0; box-shadow: none;
+}
+.excelBtn:hover { background: #d1fae5; border-color: #34d399; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15); color: #047857; }
