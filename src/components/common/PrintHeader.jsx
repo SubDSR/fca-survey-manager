@@ -15,7 +15,7 @@ function formatPrintDate(date) {
   return 'Fecha de reporte: ' + date.toLocaleDateString('es-ES', opcionesFecha);
 }
 
-export default function PrintHeader({ docente, curso }) {
+export default function PrintHeader({ docente, curso, filters }) {
   const subtitle = docente
     ? 'Reporte Individual de Desempeño Docente'
     : 'Unidad de Posgrado · Facultad de Ciencias Administrativas';
@@ -37,6 +37,21 @@ export default function PrintHeader({ docente, curso }) {
           <p>{scope}</p>
         </div>
       </div>
+      
+      {filters && (
+        <div className="print-metadata-box">
+          <strong className="metadata-title">Filtros aplicados en este reporte:</strong>
+          <ul>
+            <li><strong>Categoría:</strong> {filters.categoria || 'Todas'}</li>
+            <li><strong>Estado:</strong> {filters.estado ? (filters.estado === 'aprobado' ? 'Aprobados' : 'Desaprobados') : 'Todos'}</li>
+            <li><strong>Programa:</strong> {filters.programa || 'Todos los programas'}</li>
+            {filters.ciclo && <li><strong>Ciclo:</strong> {filters.ciclo}</li>}
+            {filters.seccion && <li><strong>Sección:</strong> {filters.seccion}</li>}
+            {filters.aula && <li><strong>Aula:</strong> {filters.aula}</li>}
+            {filters.docente && <li><strong>Docente:</strong> {filters.docente}</li>}
+          </ul>
+        </div>
+      )}
       <div className="print-footer">
         Reporte generado por el Dashboard de Evaluación Docente · Unidad de Posgrado, Facultad de Ciencias Administrativas · UNMSM
       </div>

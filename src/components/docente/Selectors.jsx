@@ -25,7 +25,7 @@ export default function Selectors({ sel, options, onChange }) {
       <SearchableSelect
         label="Docente"
         value={sel.selected}
-        options={[{ value: '', label: 'Seleccione un docente' }, ...options.docente.map((v) => ({ value: v, label: v }))]}
+        options={[{ value: '', label: 'Seleccionar docente' }, ...options.docente.map((v) => ({ value: v, label: v }))]}
         onChange={(value) => onChange('selected', value)}
         placeholder="Buscar docente..."
       />
@@ -36,27 +36,6 @@ export default function Selectors({ sel, options, onChange }) {
         onChange={(value) => onChange('curso', value)}
         placeholder="Buscar curso..."
       />
-      <div className={`${filterStyles.filterGroup} ${styles.filterGroupChecks}`}>
-        <label>Estado</label>
-        <div className={styles.estadoChecks}>
-          <label className={`${styles.estadoCheckLabel} ${styles.aprobado}`}>
-            <input
-              type="checkbox"
-              checked={sel.estado.aprobado}
-              onChange={(e) => onChange('estadoAprobado', e.target.checked)}
-            /> 
-            <span>Aprobados</span>
-          </label>
-          <label className={`${styles.estadoCheckLabel} ${styles.desaprobado}`}>
-            <input
-              type="checkbox"
-              checked={sel.estado.desaprobado}
-              onChange={(e) => onChange('estadoDesaprobado', e.target.checked)}
-            /> 
-            <span>Desaprobados</span>
-          </label>
-        </div>
-      </div>
     </div>
   );
 }

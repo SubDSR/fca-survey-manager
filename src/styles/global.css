@@ -29,9 +29,27 @@ p{margin:0;}
 .print-header { display: none; }
 .print-footer { display: none; }
 .print-stat-box { display: none; }
+.print-metadata-box { display: none; }
 
 @media print {
   @page { size: landscape; margin: 14mm 15mm 18mm; }
+
+  .print-metadata-box {
+    display: block !important;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    font-size: 11.5px;
+    color: #334155;
+  }
+  .print-metadata-box .metadata-title {
+    font-weight: 800; color: #9C1F06; margin-bottom: 6px; display: block; text-transform: uppercase; font-size: 11px;
+  }
+  .print-metadata-box ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 16px; }
+  .print-metadata-box li { display: flex; gap: 5px; }
+  .print-metadata-box li strong { margin: 0; color: #111; font-weight: 700; display: inline; }
 
   .print-header {
     display: flex !important;

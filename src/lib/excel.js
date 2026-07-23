@@ -450,6 +450,7 @@ export async function exportDirectorToExcel({
   criteriaLabels,
   directiveLabels,
   shortCriteriaLabels,
+  filters,
 }) {
   if (!rows || rows.length === 0) {
     alert('No hay datos para exportar.');
@@ -479,6 +480,36 @@ export async function exportDirectorToExcel({
   wsR.getCell('B3').font = { size: 10, color: { argb: 'FF666666' } };
 
   let r = 5;
+
+  if (filters) {
+    wsR.mergeCells(r, 2, r, 6);
+    wsR.getCell(r, 2).value = 'Filtros aplicados en este reporte:';
+    wsR.getCell(r, 2).font = { bold: true, color: { argb: XLS_COLORS.brand } };
+    r++;
+    
+    const fRows = [];
+    if (filters.categoria) fRows.push(['Categoría', filters.categoria]);
+    if (filters.estado) fRows.push(['Estado', filters.estado === 'aprobado' ? 'Aprobados' : 'Desaprobados']);
+    if (filters.programa) fRows.push(['Programa', filters.programa]);
+    if (filters.ciclo) fRows.push(['Ciclo', filters.ciclo]);
+    if (filters.seccion) fRows.push(['Sección', filters.seccion]);
+    if (filters.aula) fRows.push(['Aula', filters.aula]);
+    if (filters.docente) fRows.push(['Docente', filters.docente]);
+
+    if (fRows.length === 0) {
+      wsR.getCell(r, 2).value = 'Todos (sin filtros)';
+      r++;
+    } else {
+      fRows.forEach(([key, val]) => {
+        wsR.getCell(r, 2).value = key + ':';
+        wsR.getCell(r, 2).font = { bold: true, color: { argb: 'FF64748B' } };
+        wsR.mergeCells(r, 3, r, 6);
+        wsR.getCell(r, 3).value = val;
+        r++;
+      });
+    }
+    r++;
+  }
 
   // Indicadores generales (KPIs)
   styleSectionHeader(wsR, r, 6, 'Indicadores generales');

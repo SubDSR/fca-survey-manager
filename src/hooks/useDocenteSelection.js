@@ -33,23 +33,16 @@ const EMPTY_SEL = {
   programa: '',
   categoria: '',
   selected: '',
-  curso: '',
-  estado: { aprobado: true, desaprobado: true }
+  curso: ''
 };
 
 export function useDocenteSelection(rows, pendingSelection) {
   const [sel, setSelState] = useState(EMPTY_SEL);
 
-  // Aplica una selección "cross-view" pendiente (clic en la tabla del Director o
-  // botón "Ver detalle →" del modal de seguimiento). Guarda la identidad del
-  // último objeto aplicado para no reaplicarlo en cada render ni pisar cambios
-  // manuales posteriores del usuario.
   const lastAppliedRef = useRef(null);
   useEffect(() => {
     if (pendingSelection && pendingSelection !== lastAppliedRef.current) {
       lastAppliedRef.current = pendingSelection;
-      // Si trae un grupo concreto (curso + ciclo + sección) se abre ese grupo;
-      // de lo contrario se muestra "Todos los cursos" (curso = '').
       const curso = (pendingSelection.curso && pendingSelection.ciclo != null && pendingSelection.seccion != null)
         ? groupKeyParts(pendingSelection.curso, pendingSelection.ciclo, pendingSelection.seccion)
         : '';
@@ -57,8 +50,7 @@ export function useDocenteSelection(rows, pendingSelection) {
         programa: pendingSelection.programa,
         categoria: '',
         selected: pendingSelection.docente,
-        curso,
-        estado: { aprobado: true, desaprobado: true }
+        curso
       });
     }
   }, [pendingSelection]);
@@ -74,10 +66,6 @@ export function useDocenteSelection(rows, pendingSelection) {
           return { ...prev, selected: value, curso: '' };
         case 'curso':
           return { ...prev, curso: value };
-        case 'estadoAprobado':
-          return { ...prev, estado: { ...prev.estado, aprobado: value }, selected: '', curso: '' };
-        case 'estadoDesaprobado':
-          return { ...prev, estado: { ...prev.estado, desaprobado: value }, selected: '', curso: '' };
         default:
           return prev;
       }
@@ -96,17 +84,9 @@ export function useDocenteSelection(rows, pendingSelection) {
 
     const rowsProgCat = rowsProg.filter((r) => !effectiveCategoria || rowCategoria(r) === effectiveCategoria);
 
-    // Filtro por Estado (Aprobado / Desaprobado) según el promedio del docente.
-    const docentesEnScope = uniqueSorted(rowsProgCat, 'docente');
-    const docente = docentesEnScope.filter((d) => {
-      const rowsD = rowsProgCat.filter((r) => r.docente === d);
-      const avg = rowsD.reduce((a, r) => a + r.notaFinal, 0) / rowsD.length;
-      const aprobado = avg >= 14;
-      return (aprobado && sel.estado.aprobado) || (!aprobado && sel.estado.desaprobado);
-    });
+    const docente = uniqueSorted(rowsProgCat, 'docente');
     const effectiveSelected = docente.includes(sel.selected) ? sel.selected : '';
 
-    // Grupos curso·ciclo·sección del docente para el filtro "Curso".
     const rowsDocente = rowsProgCat.filter((r) => r.docente === effectiveSelected);
     const grupoMap = new Map();
     rowsDocente.forEach((r) => {
@@ -128,7 +108,7 @@ export function useDocenteSelection(rows, pendingSelection) {
       options: { programa, categoria, docente, curso: cursoGroups },
       effective: { categoria: effectiveCategoria, selected: effectiveSelected, curso: effectiveCurso, cursoLabel }
     };
-  }, [rows, sel.programa, sel.categoria, sel.selected, sel.curso, sel.estado.aprobado, sel.estado.desaprobado]);
+  }, [rows, sel.programa, sel.categoria, sel.selected, sel.curso]);
 
   // allDocenteRows (reference): sólo programa + docente.
   const docenteRows = useMemo(() => (

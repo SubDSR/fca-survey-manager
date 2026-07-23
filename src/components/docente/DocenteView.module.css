@@ -115,7 +115,7 @@
 .compareDelta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 2px; }
 .compareDeltaLabel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
 
-@media (max-width: 760px) {
+@media screen and (max-width: 760px) {
   .docenteHeader { flex-direction: column; }
   .profileScore, .profileCompare { border-left: none; border-top: 1px solid var(--border); padding: 16px 0 0; margin-top: 4px; }
   .profileIdentity { padding-right: 0; }

@@ -37,6 +37,7 @@ export default function DirectorView({ onOpenSeguimiento, onSelectDocente }) {
         criteriaLabels,
         directiveLabels,
         shortCriteriaLabels,
+        filters,
       });
     } catch (err) {
       console.error(err);
@@ -48,7 +49,7 @@ export default function DirectorView({ onOpenSeguimiento, onSelectDocente }) {
 
   return (
     <div className={styles.directorView}>
-      <PrintHeader />
+      <PrintHeader filters={filters} />
       <Filters filters={filters} options={options} onChange={setFilter} onReset={reset} />
 
       <AlertBanner groups={followUpGroups} onOpenSeguimiento={() => onOpenSeguimiento?.(followUpGroups)} />
