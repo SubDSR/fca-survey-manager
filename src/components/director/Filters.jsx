@@ -1,4 +1,5 @@
 import FilterSelect from '../common/FilterSelect.jsx';
+import SearchableSelect from '../common/SearchableSelect.jsx';
 import filterStyles from '../common/FilterSelect.module.css';
 import styles from './DirectorView.module.css';
 
@@ -15,15 +16,19 @@ const FIELDS = [
 export default function Filters({ filters, options, onChange, onReset }) {
   return (
     <div className={`no-print ${styles.filtersBar}`}>
-      {FIELDS.map(({ key, label, placeholder }) => (
-        <FilterSelect
-          key={key}
-          label={label}
-          value={filters[key]}
-          options={[{ value: '', label: placeholder }, ...options[key].map((v) => ({ value: v, label: v }))]}
-          onChange={(value) => onChange(key, value)}
-        />
-      ))}
+      {FIELDS.map(({ key, label, placeholder }) => {
+        const SelectComponent = (key === 'docente' || key === 'programa') ? SearchableSelect : FilterSelect;
+        return (
+          <SelectComponent
+            key={key}
+            label={label}
+            value={filters[key]}
+            options={[{ value: '', label: placeholder }, ...options[key].map((v) => ({ value: v, label: v }))]}
+            onChange={(value) => onChange(key, value)}
+            {...((key === 'docente' || key === 'programa') ? { placeholder: `Buscar ${label.toLowerCase()}...` } : {})}
+          />
+        );
+      })}
       <button type="button" className={filterStyles.btnReset} onClick={onReset}>Limpiar filtros</button>
     </div>
   );

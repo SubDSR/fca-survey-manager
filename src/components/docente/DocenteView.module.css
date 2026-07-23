@@ -19,10 +19,15 @@
 .filterGroupChecks { justify-content: flex-end; }
 .estadoChecks { display: flex; align-items: center; gap: 14px; height: 38px; }
 .estadoCheckLabel {
-  display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text);
   cursor: pointer; white-space: nowrap;
+  padding: 6px 14px; border-radius: 20px; border: 1px solid transparent; transition: all 0.2s;
 }
-.estadoCheckLabel input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
+.estadoCheckLabel input[type='checkbox'] { width: 14px; height: 14px; cursor: pointer; margin: 0; }
+.estadoCheckLabel.aprobado { color: #059669; border-color: #a7f3d0; background-color: #ecfdf5; }
+.estadoCheckLabel.aprobado input[type='checkbox'] { accent-color: #059669; }
+.estadoCheckLabel.desaprobado { color: #e11d48; border-color: #fecdd3; background-color: #fff1f2; }
+.estadoCheckLabel.desaprobado input[type='checkbox'] { accent-color: #e11d48; }
 
 /* Card de perfil en 3 secciones que ocupan todo el ancho: identidad | nota
    individual | comparativa con el programa, separadas por divisores. */
