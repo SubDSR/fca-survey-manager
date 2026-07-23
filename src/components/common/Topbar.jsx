@@ -42,6 +42,14 @@ export default function Topbar({ view, onViewChange, showToggle, onOpenExcluded 
           >
             Vista Docente Individual
           </button>
+          <button
+            type="button"
+            role="tab"
+            className={view === 'cursos' ? styles.active : undefined}
+            onClick={() => onViewChange('cursos')}
+          >
+            Vista Cursos y Programas
+          </button>
         </div>
       )}
 

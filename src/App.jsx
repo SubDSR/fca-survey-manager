@@ -5,6 +5,7 @@ import Topbar from './components/common/Topbar.jsx';
 import EmptyState from './components/common/EmptyState.jsx';
 import DirectorView from './components/director/DirectorView.jsx';
 import DocenteView from './components/docente/DocenteView.jsx';
+import CursoView from './components/curso/CursoView.jsx';
 import SeguimientoModal from './components/modals/SeguimientoModal.jsx';
 import CriteriaInfoModal from './components/modals/CriteriaInfoModal.jsx';
 import CursoDetailModal from './components/modals/CursoDetailModal.jsx';
@@ -78,6 +79,12 @@ export default function App() {
             pendingDocenteSelection={pendingDocenteSelection}
           />
         )}
+        {status === 'ready' && view === 'cursos' && (
+          <CursoView 
+            onOpenCriteriaInfo={(cursoRows) => openModal('criteria', cursoRows)}
+            onOpenDocente={(group) => openModal('docente-en-curso', group)}
+          />
+        )}
         {status === 'error' && <p>{error}</p>}
         {status !== 'ready' && status !== 'error' && <EmptyState />}
       </main>
@@ -94,9 +101,10 @@ export default function App() {
         cursoRows={modal.kind === 'criteria' ? modal.payload : []}
       />
       <CursoDetailModal
-        open={modal.kind === 'curso'}
+        open={modal.kind === 'curso' || modal.kind === 'docente-en-curso'}
         onClose={closeModal}
-        group={modal.kind === 'curso' ? modal.payload : null}
+        group={modal.kind === 'curso' || modal.kind === 'docente-en-curso' ? modal.payload : null}
+        viewMode={modal.kind === 'docente-en-curso' ? 'curso' : 'docente'}
       />
       <ExcludedModal open={modal.kind === 'excluded'} onClose={closeModal} />
     </>

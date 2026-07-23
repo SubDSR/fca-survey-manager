@@ -33,10 +33,21 @@ function AnswerPill({ value }) {
   return <span className={`${styles.answerPill} ${styles.na}`}>&ndash;</span>;
 }
 
-export default function CursoDetailModal({ open, onClose, group }) {
+export default function CursoDetailModal({ open, onClose, group, viewMode = 'docente' }) {
   const { criteriaLabels, shortCriteriaLabels, directiveLabels } = useData();
   const hasRows = group && group.rows && group.rows.length > 0;
-  const title = group ? `Encuestas del curso: ${group.curso}` : 'Encuestas del curso';
+  
+  let title = 'Encuestas';
+  let subtitle = '';
+  if (group) {
+    if (viewMode === 'curso') {
+      title = `Encuestas al docente: ${group.docente}`;
+      subtitle = 'Cada fila corresponde a una encuesta individual realizada a este docente en este curso/sección.';
+    } else {
+      title = `Encuestas del curso: ${group.curso}`;
+      subtitle = 'Cada fila corresponde a una encuesta individual realizada en este curso/sección.';
+    }
+  }
 
   let pctClass;
   let notaClass;
@@ -53,14 +64,18 @@ export default function CursoDetailModal({ open, onClose, group }) {
       onClose={onClose}
       wide
       title={title}
-      subtitle="Cada fila corresponde a una encuesta individual realizada en este curso/sección."
+      subtitle={subtitle}
     >
       {!hasRows ? (
-        <div className={styles.modalEmpty}>No hay encuestas para este curso.</div>
+        <div className={styles.modalEmpty}>No hay encuestas.</div>
       ) : (
         <>
           <p className={styles.cdmContext}>
-            <b>{group.docente}</b> &middot; {group.programa} &middot; Ciclo {group.ciclo} &middot; Sección {group.seccion} &middot; Aula {group.aula}
+            {viewMode === 'curso' ? (
+              <><b>{group.curso}</b> &middot; {group.programa} &middot; Ciclo {group.ciclo} &middot; Sección {group.seccion} &middot; Aula {group.aula}</>
+            ) : (
+              <><b>{group.docente}</b> &middot; {group.programa} &middot; Ciclo {group.ciclo} &middot; Sección {group.seccion} &middot; Aula {group.aula}</>
+            )}
           </p>
           <div className={styles.cursoDetailStats}>
             <div className={styles.cdmStat}>
