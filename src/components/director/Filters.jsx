@@ -10,7 +10,6 @@ const FIELDS = [
   { key: 'programa', label: 'Programa', placeholder: 'Todos los programas' },
   { key: 'ciclo', label: 'Ciclo', placeholder: 'Todos los ciclos' },
   { key: 'seccion', label: 'Sección', placeholder: 'Todas las secciones' },
-  { key: 'aula', label: 'Aula', placeholder: 'Todas las aulas' },
   { key: 'docente', label: 'Docente', placeholder: 'Todos los docentes' }
 ];
 
