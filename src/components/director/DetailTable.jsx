@@ -3,37 +3,63 @@ import Card from '../common/Card.jsx';
 import cardStyles from '../common/Card.module.css';
 import DataTable from '../common/DataTable.jsx';
 import { normKey } from '../../lib/csv.js';
+import { computeGroupStats } from '../../lib/stats.js';
 import styles from './DetailTable.module.css';
-
-/* Portado desde reference/dashboard_evaluacion_docente.html: renderDetailTable (líneas 1765-1826)
-   + markup de la tabla (líneas 656-679). Igual que el original, sólo el nombre del docente es
-   clickeable y lleva a la Vista Docente Individual con ese profesor preseleccionado
-   (listener de .clickable-docente en líneas 1815-1824). */
 
 const COLUMNS = [
   { key: 'docente', label: 'Docente' },
   { key: 'programa', label: 'Programa' },
-  { key: 'ciclo', label: 'Ciclo' },
-  { key: 'seccion', label: 'Sección' },
-  { key: 'aula', label: 'Aula' },
-  { key: 'curso', label: 'Curso' },
+  { key: 'curso', label: 'Cursos' },
   { key: 'nota', label: 'Nota Dim I' },
   { key: 'cumplimiento', label: '% Cumpl. (Sí)' },
   { key: 'n', label: 'N° Encuestas' }
 ];
 
-export default function DetailTable({ groups, search, onSearchChange, sort, onSort, onSelectDocente }) {
+export default function DetailTable({ groups, search, onSearchChange, sort, onSort, onSelectDocente, actions }) {
   const rows = useMemo(() => {
+    // 1. Group by docente
+    const map = new Map();
+    groups.forEach(g => {
+      if (!map.has(g.docente)) {
+        map.set(g.docente, {
+          docente: g.docente,
+          programa: new Set(),
+          curso: new Set(),
+          allRows: []
+        });
+      }
+      const d = map.get(g.docente);
+      if (g.programa) d.programa.add(g.programa);
+      if (g.curso) d.curso.add(g.curso);
+      d.allRows.push(...g.rows);
+    });
+
+    const docenteGroups = Array.from(map.values()).map(d => {
+      const stats = computeGroupStats(d.allRows);
+      return {
+        docente: d.docente,
+        programa: Array.from(d.programa).join(', '),
+        curso: Array.from(d.curso), // Keep as array for rendering
+        nota: stats.nota,
+        cumplimiento: stats.cumplimiento,
+        n: stats.n
+      };
+    });
+
     const term = normKey(search);
-    let filtered = groups.filter((g) => {
+    let filtered = docenteGroups.filter((g) => {
       if (!term) return true;
-      const haystack = normKey([g.docente, g.curso, g.programa, g.ciclo, g.seccion, g.aula].join(' '));
+      const haystack = normKey([g.docente, ...g.curso, g.programa].join(' '));
       return haystack.includes(term);
     });
 
     filtered = filtered.slice().sort((a, b) => {
       let va = a[sort.key];
       let vb = b[sort.key];
+      if (sort.key === 'curso') {
+        va = a.curso.join(' ');
+        vb = b.curso.join(' ');
+      }
       if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
       if (va < vb) return sort.dir === 'asc' ? -1 : 1;
       if (va > vb) return sort.dir === 'asc' ? 1 : -1;
@@ -46,14 +72,17 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
   return (
     <Card className={`table-card ${cardStyles.tableCard}`}>
       <div className={styles.tableHeader}>
-        <h3>Detalle por docente / curso</h3>
-        <input
-          type="search"
-          className="no-print"
-          placeholder="Buscar docente, curso, sección, aula..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
+        <h3>Detalle por docente</h3>
+        <div className={styles.headerControls}>
+          {actions}
+          <input
+            type="search"
+            className="no-print"
+            placeholder="Buscar docente, curso, programa..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
       </div>
       <DataTable
         columns={COLUMNS}
@@ -62,7 +91,7 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
         onSort={onSort}
         emptyMessage="No se encontraron resultados para los filtros seleccionados."
         renderRow={(g) => (
-          <tr key={[g.docente, g.curso, g.programa, g.ciclo, g.seccion, g.aula].join('|||')}>
+          <tr key={[g.docente, g.programa].join('|||')}>
             <td
               className={styles.clickableDocente}
               role="button"
@@ -76,10 +105,13 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
               {g.docente}
             </td>
             <td>{g.programa}</td>
-            <td>{g.ciclo}</td>
-            <td>{g.seccion}</td>
-            <td>{g.aula}</td>
-            <td>{g.curso}</td>
+            <td>
+              {g.curso.map((c, i) => (
+                <div key={i} style={{ marginBottom: i < g.curso.length - 1 ? '4px' : 0 }}>
+                  {c}
+                </div>
+              ))}
+            </td>
             <td>
               <div className={styles.tableBarWrapper}>
                 <div className={styles.tableBarBg}>

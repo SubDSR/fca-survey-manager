@@ -3,14 +3,10 @@ import Card from '../common/Card.jsx';
 import cardStyles from '../common/Card.module.css';
 import DataTable from '../common/DataTable.jsx';
 import { buildGroups } from '../../lib/groups.js';
-import styles from './DocenteView.module.css';
-
-/* Portado desde reference/dashboard_evaluacion_docente.html: renderCoursesTable
-   (líneas 2173-2208) + markup (líneas 748-760). El clic abre la modal de detalle
-   del curso (Tarea 12) vía onOpenCurso(group). */
+import styles from '../docente/DocenteView.module.css';
 
 const COLUMNS = [
-  { key: 'curso', label: 'Curso' },
+  { key: 'docente', label: 'Docente' },
   { key: 'ciclo', label: 'Ciclo' },
   { key: 'seccion', label: 'Sección' },
   { key: 'nota', label: 'Nota Dim I' },
@@ -18,30 +14,30 @@ const COLUMNS = [
   { key: 'n', label: 'N° Encuestas' }
 ];
 
-export default function CoursesTable({ docenteRows, onOpenCurso }) {
+export default function DocentesTable({ filteredRows, onOpenDocente }) {
   const groups = useMemo(() => (
-    buildGroups(docenteRows).sort((a, b) => (
-      String(b.ciclo).localeCompare(String(a.ciclo), 'es') || a.curso.localeCompare(b.curso, 'es')
+    buildGroups(filteredRows).sort((a, b) => (
+      a.docente.localeCompare(b.docente, 'es') || String(a.ciclo).localeCompare(String(b.ciclo), 'es')
     ))
-  ), [docenteRows]);
+  ), [filteredRows]);
 
   return (
     <Card 
-      title="Cursos dictados por el docente"
+      title="Docentes que dictaron este curso"
       className={`table-card ${cardStyles.tableCard}`}
     >
       <DataTable
         columns={COLUMNS}
         rows={groups}
-        emptyMessage="No hay cursos registrados para este filtro."
+        emptyMessage="No hay docentes registrados para este curso."
         renderRow={(g) => (
-          <tr key={[g.curso, g.ciclo, g.seccion, g.aula].join('|||')}>
+          <tr key={[g.docente, g.curso, g.ciclo, g.seccion, g.aula].join('|||')}>
             <td
               className={styles.clickableCurso}
-              title="Ver las encuestas realizadas en este curso"
-              onClick={() => onOpenCurso?.(g)}
+              title="Ver las encuestas realizadas a este docente en este curso"
+              onClick={() => onOpenDocente?.(g)}
             >
-              {g.curso}
+              {g.docente}
             </td>
             <td>{g.ciclo}</td>
             <td>{g.seccion}</td>

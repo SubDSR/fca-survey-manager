@@ -6,12 +6,16 @@
   margin-bottom: 12px; flex-wrap: wrap;
 }
 .tableHeader h3 { font-size: 14px; }
-.tableHeader input {
+.headerControls {
+  display: flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap;
+}
+.headerControls input {
   border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
   font-size: 13px; color: var(--text); background: #fff;
   font-family: 'Inter', sans-serif;
+  width: 250px;
 }
-.tableHeader input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.headerControls input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 
 .clickableDocente { color: var(--blue); font-weight: 600; text-decoration: underline; cursor: pointer; }
 .clickableDocente:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
