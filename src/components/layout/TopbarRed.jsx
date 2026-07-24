@@ -3,7 +3,7 @@ import { Search, Bell } from 'lucide-react';
 import { useData } from '../../context/DataContext.jsx';
 import { matchDocentes } from '../../lib/search.js';
 
-const TITLES = { director: 'Resumen General', docente: 'Evaluación Docente' };
+const TITLES = { director: 'Resumen General', docente: 'Evaluación Docente', cursos: 'Cursos y Programas' };
 
 export default function TopbarRed({ view, onSelectDocente }) {
   const { rows } = useData();
