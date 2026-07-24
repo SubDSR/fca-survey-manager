@@ -1,7 +1,7 @@
 import { GraduationCap, BookOpen, Calendar, Layers, ClipboardList } from 'lucide-react';
 
-export default function ContextStrip({ programa, curso, ciclos, secciones, encuestas }) {
-  const items = [
+export default function ContextStrip({ programa, curso, ciclos, secciones, encuestas, items: itemsProp }) {
+  const items = itemsProp || [
     { icon: GraduationCap, label: 'PROGRAMA', value: programa },
     { icon: BookOpen, label: 'CURSO', value: curso },
     { icon: Calendar, label: 'CICLO', value: ciclos },
