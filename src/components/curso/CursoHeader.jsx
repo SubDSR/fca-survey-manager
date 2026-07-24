@@ -1,4 +1,6 @@
+import { GraduationCap, Users, Calendar, Layers, ClipboardList } from 'lucide-react';
 import Card from '../common/Card.jsx';
+import ContextStrip from '../docente/ContextStrip.jsx';
 import { uniqueSorted } from '../../lib/groups.js';
 import styles from '../docente/DocenteView.module.css';
 
@@ -105,20 +107,15 @@ export default function CursoHeader({ selectedCurso, filteredRows, programaRows 
         </div>
       </Card>
 
-      <div className={styles.docenteMetaBar}>
-        <div className={styles.metaProfile}>
-          <span className={styles.metaProgramaLabel}>Programa académico: <b>{programaMetaLabel}</b></span>
-          <div className={styles.metaCicloSeccion} style={{ marginTop: '0.25rem' }}>
-            <span>Ciclo(s): <b>{ciclos.join(', ')}</b></span>
-            <span className={styles.metaDot} style={{ margin: '0 1rem' }}></span>
-            <span>Sección(es): <b>{secciones.join(', ')}</b></span>
-          </div>
-        </div>
-        <div className={styles.metaMetric}>
-          <div className={styles.metaMetricValue}>{filteredRows.length}</div>
-          <div className={styles.metaMetricLabel}>Total de encuestas del curso</div>
-        </div>
-      </div>
+      <ContextStrip
+        items={[
+          { icon: GraduationCap, label: 'PROGRAMA', value: programaMetaLabel },
+          { icon: Users, label: 'DOCENTES', value: String(docentesDistintos.length) },
+          { icon: Calendar, label: 'CICLO', value: ciclos.join(', ') },
+          { icon: Layers, label: 'SECCIONES', value: secciones.join(', ') },
+          { icon: ClipboardList, label: 'ENCUESTAS', value: String(filteredRows.length) },
+        ]}
+      />
     </>
   );
 }
