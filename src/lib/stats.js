@@ -82,3 +82,33 @@ export function computeDescriptiveStats(values) {
     min: Math.round(Math.min(...values) * 10) / 10
   };
 }
+
+export function classifyDocentesByEstado(rows) {
+  const acc = new Map();
+  rows.forEach((r) => {
+    if (!acc.has(r.docente)) acc.set(r.docente, { sum: 0, count: 0 });
+    const s = acc.get(r.docente);
+    s.sum += r.notaFinal;
+    s.count += 1;
+  });
+  const result = new Map();
+  acc.forEach((s, docente) => {
+    result.set(docente, (s.sum / s.count) >= 14 ? 'aprobado' : 'desaprobado');
+  });
+  return result;
+}
+
+export function computeDocenteVsPrograma(cursoRows, programaRows) {
+  const n = cursoRows.length;
+  const notaDocente = n ? cursoRows.reduce((a, r) => a + r.notaFinal, 0) / n : 0;
+  const notaPrograma = programaRows.length
+    ? programaRows.reduce((a, r) => a + r.notaFinal, 0) / programaRows.length
+    : 0;
+  return {
+    notaDocente,
+    notaPrograma,
+    delta: notaDocente - notaPrograma,
+    aprobado: notaDocente >= 14,
+    n,
+  };
+}

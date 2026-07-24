@@ -45,9 +45,8 @@ export default function PrintHeader({ docente, curso, filters }) {
             <li><strong>Categoría:</strong> {filters.categoria || 'Todas'}</li>
             <li><strong>Estado:</strong> {filters.estado ? (filters.estado === 'aprobado' ? 'Aprobados' : 'Desaprobados') : 'Todos'}</li>
             <li><strong>Programa:</strong> {filters.programa || 'Todos los programas'}</li>
-            {filters.ciclo && <li><strong>Ciclo:</strong> {filters.ciclo}</li>}
+            {filters.ciclo.length > 0 && <li><strong>Ciclo:</strong> {filters.ciclo.join(', ')}</li>}
             {filters.seccion && <li><strong>Sección:</strong> {filters.seccion}</li>}
-            {filters.aula && <li><strong>Aula:</strong> {filters.aula}</li>}
             {filters.docente && <li><strong>Docente:</strong> {filters.docente}</li>}
           </ul>
         </div>

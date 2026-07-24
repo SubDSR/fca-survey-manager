@@ -1,6 +1,8 @@
 import Card from '../common/Card.jsx';
 import { categoriaSlug } from '../../data/constants.js';
 import { uniqueSorted } from '../../lib/groups.js';
+import { computeDocenteVsPrograma } from '../../lib/stats.js';
+import ContextStrip from './ContextStrip.jsx';
 import styles from './DocenteView.module.css';
 
 /* Portado desde reference/dashboard_evaluacion_docente.html: renderDocenteHeader
@@ -55,18 +57,11 @@ export default function DocenteHeader({ selected, cursoRows, programaRows, onMor
   // "Nombrado - OF" traen su facultad de origen y el resto, Ciencias Administrativas.
   const facultadOrigen = first.facultad;
 
-  const notaDocente = cursoRows.reduce((a, r) => a + r.notaFinal, 0) / cursoRows.length;
-  const notaPrograma = programaRows.length
-    ? programaRows.reduce((a, r) => a + r.notaFinal, 0) / programaRows.length
-    : 0;
-
-  const delta = notaDocente - notaPrograma;
+  const { notaDocente, notaPrograma, delta, aprobado } = computeDocenteVsPrograma(cursoRows, programaRows);
   let deltaClass = styles.neu;
   let deltaSign = '';
   if (delta > 0.3) { deltaClass = styles.pos; deltaSign = '+'; }
   else if (delta < -0.3) { deltaClass = styles.neg; deltaSign = ''; }
-
-  const aprobado = notaDocente >= 14;
 
   // Apellido para la barra comparativa (p. ej. "Olivares Taipe, Paulo César" -> "OLIVARES").
   const apellidoLabel = (String(first.docente).split(',')[0].trim().split(/\s+/)[0] || first.docente).toUpperCase();
@@ -140,26 +135,15 @@ export default function DocenteHeader({ selected, cursoRows, programaRows, onMor
         </div>
       </Card>
 
-      {/* Perfil de curso integrado (debajo del card): programa, curso, ciclo/sección
-          y la métrica de total de encuestas. Sin aula (a pedido). */}
-      <div className={styles.docenteMetaBar}>
-        <div className={styles.metaProfile}>
-          <span className={styles.metaProgramaLabel}>Programa académico: <b>{programaMetaLabel}</b></span>
-          <div className={styles.metaCursoRow}>
-            <span className={styles.metaSmallLabel}>Curso:</span>
-            <span className={styles.metaCursoName}>{cursoMetaLabel}</span>
-          </div>
-          <div className={styles.metaCicloSeccion}>
-            <span>Ciclo(s): <b>{ciclos.join(', ')}</b></span>
-            <span className={styles.metaDot}>·</span>
-            <span>Sección(es): <b>{secciones.join(', ')}</b></span>
-          </div>
-        </div>
-        <div className={styles.metaMetric}>
-          <div className={styles.metaMetricValue}>{cursoRows.length}</div>
-          <div className={styles.metaMetricLabel}>Total de encuestas</div>
-        </div>
-      </div>
+      {/* Franja de contexto (estilo FIGMA ContextStrip): Programa | Curso | Ciclo |
+          Secciones | Encuestas. Debajo del Card de identidad/nota/comparativa. */}
+      <ContextStrip
+        programa={programaMetaLabel}
+        curso={cursoMetaLabel}
+        ciclos={ciclos.join(', ')}
+        secciones={secciones.join(', ')}
+        encuestas={cursoRows.length}
+      />
     </>
   );
 }

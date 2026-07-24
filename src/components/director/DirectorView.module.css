@@ -1,31 +1,6 @@
 /* Portado desde reference/dashboard_evaluacion_docente.html
    (.filters-bar, .alert-banner, .kpi-grid, .charts-grid: líneas 105-123, 140-149, 248, 257). */
 
-.filtersBar {
-  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.filterGroupChecks { justify-content: flex-end; }
-.estadoChecks { display: flex; align-items: center; gap: 14px; height: 38px; }
-
-.estadoCheckLabel {
-  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-soft);
-  cursor: pointer; white-space: nowrap;
-  padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background-color: var(--bg); transition: all 0.2s;
-}
-.estadoCheckLabel input[type='checkbox'] { width: 14px; height: 14px; cursor: pointer; margin: 0; }
-
-.estadoCheckLabel.aprobado.active { color: #059669; border-color: #a7f3d0; background-color: #ecfdf5; }
-.estadoCheckLabel.aprobado.active input[type='checkbox'] { accent-color: #059669; }
-
-.estadoCheckLabel.desaprobado.active { color: #e11d48; border-color: #fecdd3; background-color: #fff1f2; }
-.estadoCheckLabel.desaprobado.active input[type='checkbox'] { accent-color: #e11d48; }
-
-.estadoCheckLabel:hover { border-color: #cbd5e1; }
-
 .alertBanner {
   display: flex; align-items: center; gap: 10px;
   background: var(--red-bg); color: var(--red); border: 1px solid #FCA5A5;

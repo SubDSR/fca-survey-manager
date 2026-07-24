@@ -9,7 +9,7 @@ import styles from './DocenteView.module.css';
 /* Portado desde reference/dashboard_evaluacion_docente.html: renderDirectivesChecklist
    (líneas 2033-2057) + renderDirectivesPieChart (líneas 2059-2105). */
 
-export default function DirectivesChecklist({ cursoRows, directiveLabels }) {
+export default function DirectivesChecklist({ cursoRows, directiveLabels, tall }) {
   const breakdown = useMemo(
     () => computeDirectiveBreakdown(cursoRows, directiveLabels),
     [cursoRows, directiveLabels]
@@ -50,7 +50,7 @@ export default function DirectivesChecklist({ cursoRows, directiveLabels }) {
         <div className={styles.emptyState}>Sin datos de directivas para este grupo.</div>
       )}
       {counts.total > 0 && (
-        <div className={styles.directivesPieWrap}>
+        <div className={`${styles.directivesPieWrap} ${tall ? styles.directivesPieWrapTall : ''}`}>
           <PieChart data={pieConfig.data} options={pieConfig.options} />
         </div>
       )}

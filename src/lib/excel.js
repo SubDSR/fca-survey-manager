@@ -491,9 +491,8 @@ export async function exportDirectorToExcel({
     if (filters.categoria) fRows.push(['Categoría', filters.categoria]);
     if (filters.estado) fRows.push(['Estado', filters.estado === 'aprobado' ? 'Aprobados' : 'Desaprobados']);
     if (filters.programa) fRows.push(['Programa', filters.programa]);
-    if (filters.ciclo) fRows.push(['Ciclo', filters.ciclo]);
+    if (filters.ciclo.length > 0) fRows.push(['Ciclo', filters.ciclo.join(', ')]);
     if (filters.seccion) fRows.push(['Sección', filters.seccion]);
-    if (filters.aula) fRows.push(['Aula', filters.aula]);
     if (filters.docente) fRows.push(['Docente', filters.docente]);
 
     if (fRows.length === 0) {

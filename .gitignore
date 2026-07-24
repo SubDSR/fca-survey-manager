@@ -9,3 +9,6 @@ dist
 
 # Documentación interna de superpowers (specs/plans), no se versiona
 docs/superpowers/
+
+# Referencia de diseño Figma (no forma parte del código de producción)
+Rediseño de Reporte Docente/

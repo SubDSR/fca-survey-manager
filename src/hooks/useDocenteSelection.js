@@ -1,93 +1,52 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CATEGORIA_ORDER } from '../data/constants.js';
-import { uniqueSorted } from '../lib/groups.js';
 
-// La categoría de cada docente viene enriquecida en la fila (row.categoria)
-// desde el roster (public/docentes.csv), cargado en DataContext.
-const rowCategoria = (r) => r.categoria || 'Sin categoría';
+/* Selección de la Vista Docente Individual: consume los filtros compartidos
+   (Categoría, Programa, Ciclo, Sección, Docente, Estado, ver
+   useSharedFilters.js) y gestiona por su cuenta el campo local `curso`
+   (single-select). Filtrado en vivo: cualquier cambio (compartido o local)
+   se refleja de inmediato en el reporte, igual que Resumen General — sin
+   capa de borrador/aplicado.
 
-/* Selección de la Vista Docente Individual: cascada programa -> categoría ->
-   docente -> curso, con checks de estado. Portado de reference/...html
-   (refreshDocenteSelectors, setupDocenteSelectors, renderDocenteView).
+   NOTA: el filtro de Estado (Aprobado >= 14 / Desaprobado < 14) sólo acota
+   qué DOCENTES aparecen en el dropdown; no filtra las filas ya mostradas
+   del docente seleccionado. Ver
+   docs/superpowers/specs/2026-07-23-filtros-compartidos-design.md */
 
-   AJUSTE (Fase 2 · corrección del buscador de docentes):
-   - El filtro "Curso" ahora ofrece "Todos los cursos" (valor por defecto), que
-     agrega TODAS las filas del docente (promedio y total de encuestas globales),
-     y una opción por cada grupo curso·ciclo·sección para consultar uno específico.
-   - Ya NO se autoselecciona el primer curso (antes impedía ver el agregado).
-   - La navegación cruzada (clic en la tabla del Director / "Ver detalle →") puede
-     traer un grupo concreto (curso+ciclo+sección) para abrir exactamente ese, en
-     vez de caer en la primera opción.
-
-   NOTA: el checkbox de Estado (Aprobado >= 14 / Desaprobado < 14) sólo filtra qué
-   DOCENTES aparecen en el <select>; no filtra las filas ya mostradas del docente
-   seleccionado (igual que allDocenteRows/rowsDocenteCurso del reference). */
-
-// Clave/etiqueta de un grupo curso·ciclo·sección dentro de un docente.
 const GK_SEP = '|||';
 const groupKeyParts = (curso, ciclo, seccion) => `${curso}${GK_SEP}${ciclo}${GK_SEP}${seccion}`;
 const groupKeyOf = (r) => groupKeyParts(r.curso, r.ciclo, r.seccion);
 const groupLabelOf = (r) => `${r.curso} · Ciclo ${r.ciclo} · Sec. ${r.seccion}`;
 
-const EMPTY_SEL = {
-  programa: '',
-  categoria: '',
-  selected: '',
-  curso: ''
-};
+export function useDocenteSelection(rows, sharedFilters, pendingSelection) {
+  const { filters: shared, options: sharedOptions, rowsBeforeDocente, setFilter: setSharedFilter, setMany, reset: resetShared } = sharedFilters;
 
-export function useDocenteSelection(rows, pendingSelection) {
-  const [sel, setSelState] = useState(EMPTY_SEL);
+  const [curso, setCurso] = useState('');
 
   const lastAppliedRef = useRef(null);
   useEffect(() => {
     if (pendingSelection && pendingSelection !== lastAppliedRef.current) {
       lastAppliedRef.current = pendingSelection;
-      const curso = (pendingSelection.curso && pendingSelection.ciclo != null && pendingSelection.seccion != null)
+      const cursoKey = (pendingSelection.curso && pendingSelection.ciclo != null && pendingSelection.seccion != null)
         ? groupKeyParts(pendingSelection.curso, pendingSelection.ciclo, pendingSelection.seccion)
         : '';
-      setSelState({
-        programa: pendingSelection.programa,
-        categoria: '',
-        selected: pendingSelection.docente,
-        curso
-      });
+      setMany({ programa: pendingSelection.programa, categoria: '', docente: pendingSelection.docente, ciclo: [], seccion: '', estado: null });
+      setCurso(cursoKey);
     }
   }, [pendingSelection]);
 
   const setSel = (key, value) => {
-    setSelState((prev) => {
-      switch (key) {
-        case 'programa':
-          return { ...prev, programa: value, selected: '', curso: '' };
-        case 'categoria':
-          return { ...prev, categoria: value, selected: '', curso: '' };
-        case 'selected':
-          return { ...prev, selected: value, curso: '' };
-        case 'curso':
-          return { ...prev, curso: value };
-        default:
-          return prev;
-      }
-    });
+    if (key === 'curso') { setCurso(value); return; }
+    if (key === 'selected') { setSharedFilter('docente', value); return; }
+    setSharedFilter(key, value); // programa, categoria, seccion, estado
   };
 
-  const reset = () => setSelState(EMPTY_SEL);
+  const reset = () => {
+    resetShared();
+    setCurso('');
+  };
 
-  const { options, effective } = useMemo(() => {
-    const programa = uniqueSorted(rows, 'programa');
-    const rowsProg = rows.filter((r) => !sel.programa || r.programa === sel.programa);
-
-    const categoriasDisponibles = new Set(rowsProg.map(rowCategoria));
-    const categoria = CATEGORIA_ORDER.filter((c) => categoriasDisponibles.has(c));
-    const effectiveCategoria = categoria.includes(sel.categoria) ? sel.categoria : '';
-
-    const rowsProgCat = rowsProg.filter((r) => !effectiveCategoria || rowCategoria(r) === effectiveCategoria);
-
-    const docente = uniqueSorted(rowsProgCat, 'docente');
-    const effectiveSelected = docente.includes(sel.selected) ? sel.selected : '';
-
-    const rowsDocente = rowsProgCat.filter((r) => r.docente === effectiveSelected);
+  const { cursoOptions, effectiveCurso } = useMemo(() => {
+    const rowsDocente = rowsBeforeDocente.filter((r) => r.docente === shared.docente);
     const grupoMap = new Map();
     rowsDocente.forEach((r) => {
       const key = groupKeyOf(r);
@@ -97,39 +56,47 @@ export function useDocenteSelection(rows, pendingSelection) {
       a.curso.localeCompare(b.curso, 'es')
       || String(a.ciclo).localeCompare(String(b.ciclo), 'es')
       || String(a.seccion).localeCompare(String(b.seccion), 'es'));
-
-    // "Todos los cursos" (curso = '') es válido y por defecto: ya no se
-    // autoselecciona el primer curso, para poder ver el agregado del docente.
     const validKeys = new Set(cursoGroups.map((g) => g.value));
-    const effectiveCurso = validKeys.has(sel.curso) ? sel.curso : '';
-    const cursoLabel = effectiveCurso ? grupoMap.get(effectiveCurso).label : 'Todos los cursos';
+    return { cursoOptions: cursoGroups, effectiveCurso: validKeys.has(curso) ? curso : '' };
+  }, [rowsBeforeDocente, shared.docente, curso]);
 
-    return {
-      options: { programa, categoria, docente, curso: cursoGroups },
-      effective: { categoria: effectiveCategoria, selected: effectiveSelected, curso: effectiveCurso, cursoLabel }
-    };
-  }, [rows, sel.programa, sel.categoria, sel.selected, sel.curso]);
-
-  // allDocenteRows (reference): sólo programa + docente.
   const docenteRows = useMemo(() => (
-    rows.filter((r) => (!sel.programa || r.programa === sel.programa) && r.docente === effective.selected)
-  ), [rows, sel.programa, effective.selected]);
+    rows.filter((r) => (
+      (!shared.programa || r.programa === shared.programa)
+      && r.docente === shared.docente
+      && (shared.ciclo.length === 0 || shared.ciclo.includes(r.ciclo))
+      && (!shared.seccion || r.seccion === shared.seccion)
+    ))
+  ), [rows, shared.programa, shared.docente, shared.ciclo, shared.seccion]);
 
-  // "Todos los cursos" (effective.curso === '') => todas las filas del docente;
-  // un grupo concreto => filas de ese curso·ciclo·sección.
   const cursoRows = useMemo(() => (
-    effective.curso
-      ? docenteRows.filter((r) => groupKeyOf(r) === effective.curso)
-      : docenteRows
-  ), [docenteRows, effective.curso]);
+    effectiveCurso ? docenteRows.filter((r) => groupKeyOf(r) === effectiveCurso) : docenteRows
+  ), [docenteRows, effectiveCurso]);
 
-  return {
-    sel: { ...sel, categoria: effective.categoria, selected: effective.selected, curso: effective.curso },
-    cursoLabel: effective.cursoLabel,
-    setSel,
-    reset,
-    options,
-    docenteRows,
-    cursoRows
+  const cursoLabel = useMemo(() => {
+    if (!effectiveCurso) return 'Todos los cursos';
+    const first = cursoRows[0];
+    return first ? groupLabelOf(first) : 'Todos los cursos';
+  }, [effectiveCurso, cursoRows]);
+
+  const sel = {
+    programa: shared.programa,
+    categoria: shared.categoria,
+    selected: shared.docente,
+    curso: effectiveCurso,
+    estado: shared.estado,
+    ciclo: shared.ciclo,
+    seccion: shared.seccion,
   };
+
+  const options = {
+    programa: sharedOptions.programa,
+    categoria: sharedOptions.categoria,
+    docente: sharedOptions.docente,
+    ciclo: sharedOptions.ciclo,
+    seccion: sharedOptions.seccion,
+    curso: cursoOptions,
+  };
+
+  return { sel, cursoLabel, setSel, reset, options, docenteRows, cursoRows };
 }

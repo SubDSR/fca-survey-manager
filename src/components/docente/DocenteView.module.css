@@ -1,5 +1,6 @@
 /* Portado desde reference/dashboard_evaluacion_docente.html (Vista Docente):
-   .filters-bar / .docente-select-bar / .estado-checks: líneas 105-110, 290-299
+   (.filters-bar / .docente-select-bar / .estado-checks quedaron obsoletas al
+   reemplazar Selectors.jsx por FilterPanel.jsx — estilos ahora en Tailwind)
    .docente-header y derivados: líneas 300-362
    .directives-list y derivados: líneas 364-377
    .docente-tabs: líneas 380-407
@@ -9,29 +10,9 @@
    .charts-grid: línea 257 (compartida con Vista Director, duplicada aquí por
    convención de módulos CSS por vista, igual que DirectorView.module.css). */
 
-.filtersBar {
-  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-.docenteSelectBar { margin-bottom: 0; }
-.filterGroupChecks { justify-content: flex-end; }
-.estadoChecks { display: flex; align-items: center; gap: 14px; height: 38px; }
-.estadoCheckLabel {
-  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text);
-  cursor: pointer; white-space: nowrap;
-  padding: 6px 14px; border-radius: 20px; border: 1px solid transparent; transition: all 0.2s;
-}
-.estadoCheckLabel input[type='checkbox'] { width: 14px; height: 14px; cursor: pointer; margin: 0; }
-.estadoCheckLabel.aprobado { color: #059669; border-color: #a7f3d0; background-color: #ecfdf5; }
-.estadoCheckLabel.aprobado input[type='checkbox'] { accent-color: #059669; }
-.estadoCheckLabel.desaprobado { color: #e11d48; border-color: #fecdd3; background-color: #fff1f2; }
-.estadoCheckLabel.desaprobado input[type='checkbox'] { accent-color: #e11d48; }
-
 /* Card de perfil en 3 secciones que ocupan todo el ancho: identidad | nota
    individual | comparativa con el programa, separadas por divisores. */
-.docenteHeader { display: flex; align-items: stretch; gap: 0; margin-top: 16px; }
+.docenteHeader { display: flex; align-items: stretch; gap: 0; margin-top: 16px; margin-bottom: 16px; }
 .profileIdentity { flex: 1.5 1 0; display: flex; align-items: center; gap: 16px; min-width: 0; padding-right: 24px; }
 .profileScore { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; border-left: 1px solid var(--border); text-align: center; }
 .profileCompare { flex: 1.3 1 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-left: 24px; border-left: 1px solid var(--border); }
@@ -64,25 +45,6 @@
 }
 .btnProfile:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
 
-/* Perfil de curso integrado (programa, curso, ciclo/sección + métrica de
-   encuestas) en un contenedor propio debajo del card del docente. Sin aula. */
-.docenteMetaBar {
-  display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px;
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-.metaProfile { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.metaProgramaLabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
-.metaProgramaLabel b { color: var(--text); }
-.metaCursoRow { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.metaSmallLabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
-.metaCursoName { font-size: 18px; font-weight: 800; color: var(--blue); line-height: 1.2; }
-.metaCicloSeccion { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text); flex-wrap: wrap; }
-.metaCicloSeccion b { font-weight: 800; }
-.metaDot { color: var(--text-soft); }
-.metaMetric { flex: none; text-align: center; background: var(--blue-light); border-radius: 10px; padding: 12px 24px; }
-.metaMetricValue { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }
-.metaMetricLabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--blue); margin-top: 5px; }
 .metaPill {
   display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 8px;
   font-size: 12.5px; font-weight: 600; background: var(--bg); border: 1px solid var(--border); color: var(--text);
@@ -125,6 +87,41 @@
 .placeholderText { font-size: 17px; color: var(--text-soft); font-weight: 700; }
 .placeholderSub { font-size: 13px; color: var(--text-soft); margin-top: 4px; }
 
+/* Toggle Radar/Barras en la esquina superior derecha de la card "Desempeño
+   por criterio" (RadarPanel): sólo una de las dos vistas se muestra a la
+   vez, nunca ambas juntas. */
+.chartTypeToggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; flex: none; }
+.chartTypeToggle button { border: none; background: none; font: inherit; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--text-soft); cursor: pointer; transition: all .15s ease; }
+.chartTypeToggle button:hover { color: var(--text); }
+.chartTypeToggle .chartTypeActive { background: var(--blue); color: #fff; }
+.chartTypeToggle .chartTypeActive:hover { color: #fff; }
+
+/* Vista "Radar": alto explícito y sin el max-height:320px global de
+   .chartCard canvas (Card.module.css, pensado para gráficos de barra más
+   bajos) — con maintainAspectRatio:false (radarConfig) el radar llena
+   exactamente el alto que se le da, así que un contenedor más alto es lo
+   que lo hace ocupar todo el card en vez de verse chico/perdido. */
+.radarChartCol { min-width: 0; height: 460px; }
+.radarChartCol canvas { max-height: none !important; }
+
+/* Vista "Barras": desglose por criterio — código + etiqueta + nota +
+   desviación en una línea, y la barra 0-20 debajo ocupando todo el ancho
+   (en vez de compartir la fila con la etiqueta), para que tenga espacio de
+   verdad en vez de verse apretada. Más separación entre la línea del
+   criterio y su propia barra. */
+.criteriaBreakdown { display: flex; flex-direction: column; gap: 12px; }
+.criteriaBreakdownRow { display: flex; flex-direction: column; gap: 8px; }
+.criteriaBreakdownHeader { display: flex; align-items: baseline; gap: 6px; }
+.criteriaBreakdownShort { flex: none; font-size: 11px; font-weight: 800; color: var(--blue); }
+.criteriaBreakdownFull { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.criteriaBreakdownValue { flex: none; font-size: 12.5px; font-weight: 800; color: var(--text); }
+.criteriaBreakdownDelta { flex: none; width: 34px; text-align: right; font-size: 11px; font-weight: 700; }
+.criteriaBreakdownDeltaPos { color: var(--green); }
+.criteriaBreakdownDeltaNeg { color: var(--red); }
+.criteriaBreakdownDeltaNeu { color: var(--text-soft); }
+.criteriaBreakdownTrack { width: 100%; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.criteriaBreakdownFill { display: block; height: 100%; background: var(--blue); border-radius: 5px; }
+
 .estadoChip { padding: 8px 22px; border-radius: 10px; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
 .estadoChip.aprobado { background: var(--green-bg); color: #1e7e34; }
 .estadoChip.desaprobado { background: var(--red-bg); color: #b3261e; }
@@ -155,6 +152,12 @@
 .miniLegend .no i { background: var(--red); }
 .miniLegend .av i { background: var(--yellow); }
 .directivesPieWrap { margin-top: 16px; height: 140px; border-top: 1px solid var(--border); padding-top: 16px; }
+
+/* Cuando la card vecina "Desempeño por criterio" muestra el radar (más alto,
+   ver .radarChartCol), este pie crece para que ambas cards guarden
+   concordancia; en "Barras" vuelve al alto normal de .directivesPieWrap. */
+.directivesPieWrapTall { height: 260px; }
+.directivesPieWrapTall canvas { max-height: none !important; }
 
 .pieChartCard { margin-top: 16px; max-width: 500px; margin-left: auto; margin-right: auto; }
 .pieChartCard h3 { text-align: center; }

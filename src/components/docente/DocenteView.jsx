@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useData } from '../../context/DataContext.jsx';
-import { useDocenteSelection } from '../../hooks/useDocenteSelection.js';
 import { exportToExcel } from '../../lib/excel.js';
 import PrintHeader from '../common/PrintHeader.jsx';
-import Selectors from './Selectors.jsx';
+import FilterPanel from './FilterPanel.jsx';
 import DocenteHeader from './DocenteHeader.jsx';
 import DocenteTabs from './DocenteTabs.jsx';
 import RadarPanel from './RadarPanel.jsx';
@@ -13,6 +12,7 @@ import CoursesTable from './CoursesTable.jsx';
 import RawResponsesTable from './RawResponsesTable.jsx';
 import PrintStatBox from './PrintStatBox.jsx';
 import styles from './DocenteView.module.css';
+import appStyles from '../../App.module.css';
 
 /* Portado desde reference/dashboard_evaluacion_docente.html: renderDocenteView
    (líneas 2453-2480) + markup de la sección #docenteView (líneas 682-785).
@@ -30,18 +30,16 @@ import styles from './DocenteView.module.css';
    porque una declaración `!important` de la hoja de estilos vence a un estilo
    inline no-important. */
 
-export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDocenteSelection }) {
-  const { rows, criteriaLabels, directiveLabels, shortCriteriaLabels } = useData();
-  const { sel, cursoLabel, setSel, options, docenteRows, cursoRows } = useDocenteSelection(rows, pendingDocenteSelection);
-  // Etiqueta legible del curso para el PDF/Excel ('' cuando es "Todos los cursos").
+export default function DocenteView({
+  onOpenCriteriaInfo, onOpenCurso,
+  sel, cursoLabel, setSel, reset, options, docenteRows, cursoRows, programaRows,
+  onToggleCiclo, onClearCiclo,
+}) {
+  const { criteriaLabels, directiveLabels, shortCriteriaLabels } = useData();
   const cursoDisplay = sel.curso ? cursoLabel : '';
   const [tab, setTab] = useState('resumen');
   const [exporting, setExporting] = useState(false);
-
-  const first = cursoRows[0] || null;
-  const programaRows = useMemo(() => (
-    first ? rows.filter((r) => r.programa === first.programa) : []
-  ), [rows, first]);
+  const [criteriaView, setCriteriaView] = useState('radar');
 
   const handleExportExcel = async () => {
     if (!sel.selected || cursoRows.length === 0 || exporting) return;
@@ -69,55 +67,64 @@ export default function DocenteView({ onOpenCriteriaInfo, onOpenCurso, pendingDo
     <div className={styles.docenteView}>
       <PrintHeader docente={sel.selected} curso={cursoDisplay} />
 
-      <Selectors sel={sel} options={options} onChange={setSel} />
+      <FilterPanel
+        sel={sel} options={options} onChange={setSel}
+        onToggleCiclo={onToggleCiclo} onClearCiclo={onClearCiclo}
+        onReset={reset}
+      />
 
-      <DocenteHeader selected={sel.selected} cursoRows={cursoRows} programaRows={programaRows} />
+      <div className={`content-shell ${appStyles.shell}`}>
+        <DocenteHeader selected={sel.selected} cursoRows={cursoRows} programaRows={programaRows} />
 
-      <PrintStatBox cursoRows={cursoRows} programaRows={programaRows} criteriaLabels={criteriaLabels} />
+        <PrintStatBox cursoRows={cursoRows} programaRows={programaRows} criteriaLabels={criteriaLabels} />
 
-      <DocenteTabs active={tab} onChange={setTab} />
+        <DocenteTabs active={tab} onChange={setTab} />
 
-      <div className="tab-resumen" style={{ display: tab === 'resumen' ? undefined : 'none' }}>
-        <div className={`charts-grid ${styles.chartsGrid}`}>
-          <RadarPanel
-            cursoRows={cursoRows}
-            programaRows={programaRows}
-            shortCriteriaLabels={shortCriteriaLabels}
-            nCrit={criteriaLabels.length}
-            onOpenCriteriaInfo={onOpenCriteriaInfo}
-          />
-          <DirectivesChecklist cursoRows={cursoRows} directiveLabels={directiveLabels} />
+        <div className="tab-resumen" style={{ display: tab === 'resumen' ? undefined : 'none' }}>
+          <div className={`charts-grid ${styles.chartsGrid}`}>
+            <RadarPanel
+              cursoRows={cursoRows}
+              programaRows={programaRows}
+              shortCriteriaLabels={shortCriteriaLabels}
+              criteriaLabels={criteriaLabels}
+              nCrit={criteriaLabels.length}
+              onOpenCriteriaInfo={onOpenCriteriaInfo}
+              view={criteriaView}
+              onViewChange={setCriteriaView}
+            />
+            <DirectivesChecklist cursoRows={cursoRows} directiveLabels={directiveLabels} tall={criteriaView === 'radar'} />
+          </div>
+
+          <CoursePieChart cursoRows={cursoRows} curso={sel.curso} />
+
+          <CoursesTable docenteRows={docenteRows} onOpenCurso={onOpenCurso} />
         </div>
 
-        <CoursePieChart cursoRows={cursoRows} curso={sel.curso} />
+        <div className="tab-respuestas" style={{ display: tab === 'respuestas' ? undefined : 'none' }}>
+          <RawResponsesTable cursoRows={cursoRows} criteriaLabels={criteriaLabels} directiveLabels={directiveLabels} />
+        </div>
 
-        <CoursesTable docenteRows={docenteRows} onOpenCurso={onOpenCurso} />
+        <div className={`no-print ${styles.printBar}`}>
+          <button
+            type="button"
+            className={`${styles.btnPrimary} ${styles.excelBtn}`}
+            onClick={handleExportExcel}
+            disabled={!sel.selected || cursoRows.length === 0 || exporting}
+          >
+            {exporting ? 'Generando Excel...' : 'Descargar Excel (Formato Oficial)'}
+          </button>
+          <button type="button" className={styles.btnPrimary} onClick={() => window.print()}>
+            Imprimir / Exportar a PDF
+          </button>
+        </div>
+
+        {/* Acotación al pie (visible también en el PDF): recuerda que los cálculos
+            dependen de los filtros activos. Portado del HTML original. */}
+        <p className={styles.docenteFootnote}>
+          Los porcentajes y promedios se calculan sobre las encuestas que cumplen los filtros
+          activos. Verifique siempre el N° de encuestas antes de interpretar un resultado.
+        </p>
       </div>
-
-      <div className="tab-respuestas" style={{ display: tab === 'respuestas' ? undefined : 'none' }}>
-        <RawResponsesTable cursoRows={cursoRows} criteriaLabels={criteriaLabels} directiveLabels={directiveLabels} />
-      </div>
-
-      <div className={`no-print ${styles.printBar}`}>
-        <button
-          type="button"
-          className={`${styles.btnPrimary} ${styles.excelBtn}`}
-          onClick={handleExportExcel}
-          disabled={!sel.selected || cursoRows.length === 0 || exporting}
-        >
-          {exporting ? 'Generando Excel...' : 'Descargar Excel (Formato Oficial)'}
-        </button>
-        <button type="button" className={styles.btnPrimary} onClick={() => window.print()}>
-          Imprimir / Exportar a PDF
-        </button>
-      </div>
-
-      {/* Acotación al pie (visible también en el PDF): recuerda que los cálculos
-          dependen de los filtros activos. Portado del HTML original. */}
-      <p className={styles.docenteFootnote}>
-        Los porcentajes y promedios se calculan sobre las encuestas que cumplen los filtros
-        activos. Verifique siempre el N° de encuestas antes de interpretar un resultado.
-      </p>
     </div>
   );
 }

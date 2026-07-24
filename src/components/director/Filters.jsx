@@ -1,60 +1,45 @@
-import FilterSelect from '../common/FilterSelect.jsx';
-import SearchableSelect from '../common/SearchableSelect.jsx';
-import filterStyles from '../common/FilterSelect.module.css';
-import styles from './DirectorView.module.css';
+import Dropdown from '../common/filters/Dropdown.jsx';
+import EstadoToggle from '../common/filters/EstadoToggle.jsx';
+import CicloMultiSelect from '../common/filters/CicloMultiSelect.jsx';
+import FilterBar from '../common/filters/FilterBar.jsx';
 
-/* Portado desde reference/dashboard_evaluacion_docente.html (markup líneas 605-627). */
+export default function Filters({ filters, options, onChange, onToggleCiclo, onClearCiclo, onReset }) {
+  const hasActive = filters.categoria || filters.programa || filters.ciclo.length > 0 || filters.seccion || filters.docente || filters.estado;
+  const activeCount = [filters.categoria, filters.programa, filters.seccion, filters.docente, filters.estado].filter(Boolean).length
+    + (filters.ciclo.length > 0 ? 1 : 0);
 
-const FIELDS = [
-  { key: 'categoria', label: 'Categoría', placeholder: 'Todas las categorías' },
-  { key: 'programa', label: 'Programa', placeholder: 'Todos los programas' },
-  { key: 'ciclo', label: 'Ciclo', placeholder: 'Todos los ciclos' },
-  { key: 'seccion', label: 'Sección', placeholder: 'Todas las secciones' },
-  { key: 'aula', label: 'Aula', placeholder: 'Todas las aulas' },
-  { key: 'docente', label: 'Docente', placeholder: 'Todos los docentes' }
-];
-
-export default function Filters({ filters, options, onChange, onReset }) {
   return (
-    <div className={`no-print ${styles.filtersBar}`}>
-      {FIELDS.map(({ key, label, placeholder }) => {
-        const isSearchable = key === 'docente' || key === 'programa' || key === 'categoria';
-        const SelectComponent = isSearchable ? SearchableSelect : FilterSelect;
-        return (
-          <SelectComponent
-            key={key}
-            label={label}
-            value={filters[key]}
-            options={[{ value: '', label: placeholder }, ...options[key].map((v) => ({ value: v, label: v }))]}
-            onChange={(value) => onChange(key, value)}
-            {...(isSearchable ? { placeholder: `Buscar ${label.toLowerCase()}...` } : {})}
-          />
-        );
-      })}
-      
-      <div className={`${filterStyles.filterGroup} ${styles.filterGroupChecks}`}>
-        <label>Estado</label>
-        <div className={styles.estadoChecks}>
-          <label className={`${styles.estadoCheckLabel} ${styles.aprobado} ${filters.estado === 'aprobado' ? styles.active : ''}`}>
-            <input
-              type="checkbox"
-              checked={filters.estado === 'aprobado'}
-              onChange={() => onChange('estado', 'aprobado')}
-            /> 
-            <span>Aprobados</span>
-          </label>
-          <label className={`${styles.estadoCheckLabel} ${styles.desaprobado} ${filters.estado === 'desaprobado' ? styles.active : ''}`}>
-            <input
-              type="checkbox"
-              checked={filters.estado === 'desaprobado'}
-              onChange={() => onChange('estado', 'desaprobado')}
-            /> 
-            <span>Desaprobados</span>
-          </label>
-        </div>
-      </div>
-
-      <button type="button" className={filterStyles.btnReset} onClick={onReset}>Limpiar filtros</button>
-    </div>
+    <FilterBar activeCount={activeCount} hasActive={hasActive} onReset={onReset}>
+      <Dropdown
+        label="Categoría"
+        value={filters.categoria}
+        options={[{ value: '', label: 'Todas las categorías' }, ...options.categoria.map((v) => ({ value: v, label: v }))]}
+        onChange={(v) => onChange('categoria', v)}
+        placeholder="Todas las categorías"
+      />
+      <Dropdown
+        label="Programa"
+        value={filters.programa}
+        options={[{ value: '', label: 'Todos los programas' }, ...options.programa.map((v) => ({ value: v, label: v }))]}
+        onChange={(v) => onChange('programa', v)}
+        placeholder="Todos los programas"
+      />
+      <CicloMultiSelect ciclos={filters.ciclo} options={options.ciclo} onToggle={onToggleCiclo} onClear={onClearCiclo} />
+      <Dropdown
+        label="Sección"
+        value={filters.seccion}
+        options={[{ value: '', label: 'Todas las secciones' }, ...options.seccion.map((v) => ({ value: v, label: v }))]}
+        onChange={(v) => onChange('seccion', v)}
+        placeholder="Todas las secciones"
+      />
+      <Dropdown
+        label="Docente"
+        value={filters.docente}
+        options={[{ value: '', label: 'Todos los docentes' }, ...options.docente.map((v) => ({ value: v, label: v }))]}
+        onChange={(v) => onChange('docente', v)}
+        placeholder="Todos los docentes"
+      />
+      <EstadoToggle estado={filters.estado} onChange={onChange} />
+    </FilterBar>
   );
 }
