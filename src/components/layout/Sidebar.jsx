@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { id: 'director', icon: LayoutDashboard, label: 'Resumen General', disabled: false },
   { id: 'docente', icon: BarChart2, label: 'Evaluación Docente', disabled: false },
   { id: 'gestion', icon: Users, label: 'Gestión de Docentes', disabled: true },
-  { id: 'cursos', icon: BookOpen, label: 'Cursos y Programas', disabled: true },
+  { id: 'cursos', icon: BookOpen, label: 'Cursos y Programas', disabled: false },
   { id: 'reportes', icon: FileText, label: 'Reportes', disabled: true },
   { id: 'config', icon: Settings, label: 'Configuración', disabled: true },
 ];
