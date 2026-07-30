@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Card from '../common/Card.jsx';
 import cardStyles from '../common/Card.module.css';
 import DataTable from '../common/DataTable.jsx';
@@ -16,7 +16,7 @@ const COLUMNS = [
 ];
 
 export default function DetailTable({ groups, search, onSearchChange, sort, onSort, onSelectDocente, actions }) {
-  const rows = useMemo(() => {
+  const allFilteredRows = useMemo(() => {
     // 1. Group by docente
     const map = new Map();
     groups.forEach(g => {
@@ -69,6 +69,30 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
     return filtered;
   }, [groups, search, sort]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  useEffect(() => {
+    const handleBeforePrint = () => setIsPrinting(true);
+    const handleAfterPrint = () => setIsPrinting(false);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [groups, search, sort]);
+
+  const totalPages = Math.ceil(allFilteredRows.length / itemsPerPage);
+  const paginatedRows = isPrinting 
+    ? allFilteredRows 
+    : allFilteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <Card className={`table-card ${cardStyles.tableCard}`}>
       <div className={styles.tableHeader}>
@@ -86,7 +110,7 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
       </div>
       <DataTable
         columns={COLUMNS}
-        rows={rows}
+        rows={paginatedRows}
         sort={sort}
         onSort={onSort}
         emptyMessage="No se encontraron resultados para los filtros seleccionados."
@@ -132,6 +156,30 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
           </tr>
         )}
       />
+      {!isPrinting && totalPages > 1 && (
+        <div className={`no-print ${styles.paginationContainer}`}>
+          <span className={styles.pageInfo}>
+            Mostrando {(currentPage - 1) * itemsPerPage + 1} a {Math.min(currentPage * itemsPerPage, allFilteredRows.length)} de {allFilteredRows.length} docentes
+          </span>
+          <div className={styles.pageControls}>
+            <button 
+              className={styles.pageButton} 
+              disabled={currentPage === 1} 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Anterior
+            </button>
+            <span className={styles.pageIndicator}>Página {currentPage} de {totalPages}</span>
+            <button 
+              className={styles.pageButton} 
+              disabled={currentPage === totalPages} 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
