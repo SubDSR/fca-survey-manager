@@ -25,6 +25,9 @@ export function buildRoster(records, fields) {
   const cGrado = findCol(fields, ['grado academico', 'grado académico', 'grado']);
   const cCorreo = findCol(fields, ['correo', 'email', 'e-mail']);
 
+  const cTipoDoc = findCol(fields, ['tipo doc.', 'tipo doc', 'tipo documento']);
+  const cNumDoc = findCol(fields, ['n° doc.', 'n° doc', 'num doc', 'numero documento']);
+
   const roster = new Map();
   records.forEach((r) => {
     const paterno = cPaterno ? r[cPaterno] : '';
@@ -32,11 +35,20 @@ export function buildRoster(records, fields) {
     const nombres = cNombres ? r[cNombres] : '';
     const key = docenteKey(`${paterno || ''} ${materno || ''} ${nombres || ''}`);
     if (!key) return;
+    
+    // Solo usamos el display name para el mapeo, pero guardamos los apellidos separados también
     roster.set(key, {
+      id: key,
+      nombreCompleto: [paterno, materno, nombres].filter(Boolean).join(' '),
+      paterno: (paterno || '').trim(),
+      materno: (materno || '').trim(),
+      nombres: (nombres || '').trim(),
       categoria: (cCondicion && String(r[cCondicion] || '').trim()) || 'Sin categoría',
       facultad: (cFacultad && String(r[cFacultad] || '').trim()) || null,
       grado: (cGrado && String(r[cGrado] || '').trim()) || null,
       correo: (cCorreo && String(r[cCorreo] || '').trim()) || null,
+      tipoDoc: (cTipoDoc && String(r[cTipoDoc] || '').trim()) || null,
+      numDoc: (cNumDoc && String(r[cNumDoc] || '').trim()) || null,
     });
   });
   return roster;

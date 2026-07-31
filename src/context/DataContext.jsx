@@ -12,8 +12,7 @@ export function DataProvider({ children }) {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
   // Roster de docentes (categoría/facultad) cargado desde public/docentes.csv.
-  // Se guarda en un ref para que el enriquecimiento sea síncrono al aplicar un
-  // dataset, tanto en la precarga como al subir un CSV.
+  const [roster, setRoster] = useState(new Map());
   const rosterRef = useRef(new Map());
 
   const applyResult = useCallback((result, fileName) => {
@@ -58,7 +57,9 @@ export function DataProvider({ children }) {
       .then((t) => {
         if (cancelled) return;
         const parsed = Papa.parse(t, { header: true, skipEmptyLines: true });
-        rosterRef.current = buildRoster(parsed.data, parsed.meta.fields || []);
+        const newRoster = buildRoster(parsed.data, parsed.meta.fields || []);
+        rosterRef.current = newRoster;
+        setRoster(newRoster);
       })
       .catch(() => { /* sin roster: se degrada a "Sin categoría" */ })
       .finally(() => { if (!cancelled) reload(); });
@@ -66,7 +67,7 @@ export function DataProvider({ children }) {
   }, [reload]);
 
   return (
-    <DataContext.Provider value={{ ...dataset, csvMeta, status, error, loadFromFile, reload }}>
+    <DataContext.Provider value={{ ...dataset, roster, csvMeta, status, error, loadFromFile, reload }}>
       {children}
     </DataContext.Provider>
   );
