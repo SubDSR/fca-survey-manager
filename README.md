@@ -1,69 +1,48 @@
-# FCA Survey Manager — Dashboard de Evaluación Docente
+# FCA Survey Manager
 
-Aplicación web para analizar los resultados de las encuestas de evaluación docente
-de la Unidad de Posgrado, Facultad de Ciencias Administrativas (UNMSM). Migración del
-dashboard original (un único archivo HTML) a **React + Vite** con **CSS Modules**,
-manteniendo una réplica visual y funcional exacta.
+Monorepo del sistema de evaluación docente de la Unidad de Posgrado, Facultad de
+Ciencias Administrativas (UNMSM).
 
-Todo el procesamiento ocurre en el navegador: se carga un CSV de encuestas y se
-generan indicadores, gráficos, tablas y reportes exportables (Excel / PDF).
+```
+fca-survey-manager/
+├── frontend/     Aplicación React (Vite) — dashboard de evaluación docente
+├── backend/      API Node.js (por implementar) — procesos que usan la service_role key de Supabase
+└── README.md
+```
 
-## Stack
+## frontend/
 
-- **React 18** (JSX, sin TypeScript) + **Vite**
-- **CSS Modules** por componente + `src/styles/global.css` para los tokens de tema
-- **PapaParse** (parseo CSV), **Chart.js** + **react-chartjs-2** (gráficos), **ExcelJS** (export)
-- **Vitest** para las pruebas de la lógica de negocio
-
-## Puesta en marcha
+Dashboard React + Vite. Todo el procesamiento actual ocurre en el navegador (carga de
+CSV, cálculo de indicadores, exportación a Excel/PDF). Detalles de stack, estructura y
+funcionalidad en [`frontend/README.md`](frontend/README.md).
 
 ```bash
+cd frontend
 npm install
-npm run dev      # servidor de desarrollo (http://localhost:5173)
-npm run build    # build de producción
-npm run preview  # previsualiza el build
-npm test         # ejecuta las pruebas (Vitest)
+npm run dev      # http://localhost:5173
 ```
 
-Al iniciar, la app precarga dos CSV incluidos en `public/`:
+## backend/
 
-- **`docentes.csv`** — roster de docentes (facultad, condición/categoría, grado, correo).
-  De aquí se obtiene la categoría (`Nombrado` / `Nombrado - OF` / `Contratado`) y la
-  facultad de origen de cada docente; ya **no** hay datos hardcodeados.
-- **`dataset.csv`** — encuestas de evaluación (una fila por respuesta). El nombre del
-  docente puede venir en una columna `Docente` o separado en `Apellido Paterno`,
-  `Apellido Materno`, `Nombres`.
+Todavía no tiene framework ni lógica; por ahora solo existe `backend/package.json`
+(`fca-survey-manager-backend`). Se conectará a Supabase (PostgreSQL) usando la
+`service_role key` para operaciones que no deben exponerse al frontend: carga masiva
+de datos, procesos ETL y reportes pesados.
 
-Ambos se cruzan por una clave de nombre normalizada (sin acentos ni mayúsculas). Puedes
-reemplazar el dataset de encuestas en cualquier momento con el botón **Cargar CSV**.
+- Proyecto Supabase: `https://tqhqizvfehatfvmvwtsb.supabase.co`
 
-## Estructura
-
-```
-src/
-├─ lib/          Lógica de negocio pura (parseo, estadísticas, agrupación, Excel) — testeada
-├─ data/         Datos de dominio (roster de docentes desde CSV, constantes, logo)
-├─ context/      DataContext (dataset cargado, precarga + upload)
-├─ hooks/        Hooks por vista (filtros Director, selección Docente, carga CSV)
-├─ components/
-│  ├─ common/    Card, Modal, DataTable, FilterSelect, KpiCard, Topbar, EmptyState, PrintHeader
-│  ├─ charts/    Envoltorios de react-chartjs-2 (Bar, Radar, Pie, Line)
-│  ├─ director/  Vista Director de Carrera (filtros, KPIs, gráficos, tabla, banner)
-│  ├─ docente/   Vista Docente Individual (radar, directivas, cursos, encuestados)
-│  └─ modals/    Seguimiento, Detalle de Criterios, Detalle de Curso, Registros Excluidos
-└─ styles/       global.css (tokens :root, reset, @media print)
+```bash
+cd backend
+npm install
 ```
 
-## Funcionalidad
+## Base de datos
 
-- **Vista Director de Carrera**: filtros en cascada, KPIs, promedio por criterio,
-  cumplimiento de directivas, evolución por ciclo, tabla de detalle con búsqueda/orden
-  y alertas de docentes que requieren seguimiento.
-- **Vista Docente Individual**: desempeño por criterio (radar vs. promedio del programa),
-  cumplimiento de directivas, cursos dictados y detalle individual de encuestados.
-- **Exportación**: reporte oficial en Excel (con gráficos embebidos) e impresión / PDF.
+Supabase (PostgreSQL), ya creada y migrada. El frontend usa la clave pública (anon)
+para lecturas normales; el backend usará la `service_role key` para las operaciones
+privilegiadas mencionadas arriba. Ninguna de las dos claves debe compartirse entre
+carpetas ni subirse al repositorio.
 
 ## Documentación
 
-El diseño y el plan de implementación están en `docs/superpowers/`. Los archivos
-originales de referencia (HTML + CSV) están en `reference/`.
+El diseño y el historial de planes de implementación están en `docs/superpowers/`.
