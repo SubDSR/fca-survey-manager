@@ -1,0 +1,51 @@
+/* Solo theme + utilities: se omite tailwindcss/preflight.css a propósito para
+   no resetear estilos por defecto (botones, inputs, márgenes) que usan los
+   componentes CSS Modules existentes (Director/Resumen General deben quedar
+   pixel-idénticos). Ver docs/superpowers/specs/2026-07-23-rediseno-reporte-docente-design.md */
+/* Orden explícito de capas: base queda POR DEBAJO de utilities a propósito,
+   para que bg-primary/text-white/etc (utilities) sigan ganando sobre el
+   reset de abajo. Sin esta declaración, un @layer nombrado que se registra
+   por primera vez más adelante en el archivo (como .fca-shell en base)
+   quedaría con MÁS prioridad que utilities, sin importar el orden físico de
+   las reglas — rompiendo cosas como el fondo bg-primary del ítem activo del
+   Sidebar (quedaba con fondo transparente y texto blanco, invisible). */
+@layer theme, base, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-primary: #9C1F06;
+  --color-primary-dark: #7a1804;
+  --color-primary-mid: #e8c5bf;
+}
+
+/* Reset acotado (NO es el preflight global de Tailwind, que sigue
+   desactivado) para los botones/inputs/selects nuevos dentro de
+   .fca-shell (Sidebar, TopbarRed, FilterBar y sus campos): sin preflight,
+   heredan apariencia nativa del navegador (bordes, padding, box-shadow de
+   foco) que no viene de ninguna clase Tailwind. Cada componente sigue
+   definiendo su propio border/bg/shadow vía clases explícitas — este
+   reset solo quita lo que el navegador agrega por su cuenta. Va en
+   @layer base (ver arriba) para que las utilities de Tailwind (bg-primary,
+   text-white, etc.) puedan seguir ganándole cuando un componente sí quiere
+   un fondo/color explícito. */
+@layer base {
+  .fca-shell button,
+  .fca-shell input,
+  .fca-shell select {
+    appearance: none;
+    border: 0;
+    background: none;
+    font: inherit;
+    box-shadow: none;
+    outline: none;
+  }
+
+  /* Excepción al reset de arriba: los checkboxes SÍ necesitan su apariencia
+     nativa (caja + check) para ser reconocibles — appearance:none los deja
+     invisibles/sin marca. Va después en la misma capa para ganarle a la
+     regla general de "input" de arriba. */
+  .fca-shell input[type='checkbox'] {
+    appearance: auto;
+  }
+}

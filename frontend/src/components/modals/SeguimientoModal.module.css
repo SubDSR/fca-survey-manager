@@ -1,0 +1,30 @@
+/* Portado desde reference/dashboard_evaluacion_docente.html (líneas 173-195). */
+
+.seguimientoItem {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 4px; border-bottom: 1px solid var(--border);
+}
+.seguimientoItem:last-child { border-bottom: none; }
+
+.docenteName { font-size: 14px; font-weight: 700; color: var(--text); }
+.docenteMeta { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+
+.seguimientoReasons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.reasonChip {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+  background: var(--red-bg); color: var(--red); white-space: nowrap;
+}
+.reasonChip.yellow { background: var(--yellow-bg); color: #8a6d00; }
+
+.seguimientoMetrics { display: flex; gap: 18px; flex: none; text-align: center; }
+.metricValue { font-size: 18px; font-weight: 800; color: var(--text); }
+.metricValue.bad { color: var(--red); }
+.metricLabel { font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: .02em; }
+
+.modalEmpty { padding: 30px 4px; text-align: center; color: var(--text-soft); font-size: 13px; }
+
+.btnSegDetail {
+  background: var(--blue); color: #fff; border: none; padding: 8px 14px; border-radius: 6px;
+  font-size: 12px; font-weight: 700; cursor: pointer; flex: none; white-space: nowrap;
+}
+.btnSegDetail:hover { background: #7a1805; }

@@ -1,0 +1,16 @@
+.tableHeader{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;}
+.tableHeader h3{font-size:14px;}
+
+.tableResponsive { overflow-x: auto; width: 100%; }
+.tableResponsive table{width:100%; border-collapse:collapse; font-size:13px;}
+.tableResponsive thead th{
+  text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em;
+  color:var(--text-soft); border-bottom:2px solid var(--border); padding:10px 10px; cursor:pointer; user-select:none;
+  white-space:nowrap; font-weight: 600;
+}
+.tableResponsive thead th:hover{color:var(--blue);}
+.arrow{font-size:10px; opacity:.5; margin-left:3px;}
+.tableResponsive tbody td{padding:10px 10px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle;}
+.tableResponsive tbody tr:nth-child(even){background:#F8FAFC;}
+.tableResponsive tbody tr:hover{background:#F1F5F9;}
+.emptyRow td{text-align:center; color:var(--text-soft); padding:24px; font-size:13px;}

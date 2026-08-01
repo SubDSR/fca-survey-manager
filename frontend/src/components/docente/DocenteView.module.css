@@ -1,0 +1,210 @@
+/* Portado desde reference/dashboard_evaluacion_docente.html (Vista Docente):
+   (.filters-bar / .docente-select-bar / .estado-checks quedaron obsoletas al
+   reemplazar Selectors.jsx por FilterPanel.jsx — estilos ahora en Tailwind)
+   .docente-header y derivados: líneas 300-362
+   .directives-list y derivados: líneas 364-377
+   .docente-tabs: líneas 380-407
+   #rawResponsesTable (sticky primera columna): líneas 409-436
+   .print-bar / .btn-primary: líneas 438-444
+   .empty-state: línea 446
+   .charts-grid: línea 257 (compartida con Vista Director, duplicada aquí por
+   convención de módulos CSS por vista, igual que DirectorView.module.css). */
+
+/* Card de perfil en 3 secciones que ocupan todo el ancho: identidad | nota
+   individual | comparativa con el programa, separadas por divisores. */
+.docenteHeader { display: flex; align-items: stretch; gap: 0; margin-top: 16px; margin-bottom: 16px; }
+.profileIdentity { flex: 1.5 1 0; display: flex; align-items: center; gap: 16px; min-width: 0; padding-right: 24px; }
+.profileScore { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; border-left: 1px solid var(--border); text-align: center; }
+.profileCompare { flex: 1.3 1 0; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-left: 24px; border-left: 1px solid var(--border); }
+.docenteAvatar {
+  flex: none; width: 66px; height: 66px; border-radius: 50%; background: var(--blue); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 23px; font-weight: 800;
+  letter-spacing: .02em;
+}
+.docenteAvatar.placeholder { background: var(--border); color: var(--text-soft); }
+.docenteIdInfo { min-width: 0; }
+.profileName { font-size: 23px; font-weight: 800; line-height: 1.15; color: var(--text); }
+.profileMeta { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.profileMeta li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.profileMetaLabel { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
+.profileMetaValue { color: var(--text); font-weight: 700; }
+.docenteCategoryPill {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em;
+}
+.docenteCategoryPill.contratado { background: var(--yellow-bg); color: #8a6d00; }
+.docenteCategoryPill.nombrado { background: var(--green-bg); color: #1e7e34; }
+.docenteCategoryPill.nombrado-of { background: #E4EEFB; color: #1D4ED8; }
+
+/* Botón "Ver Perfil Detallado" (placeholder para futuro modal del docente). */
+.btnProfile {
+  display: inline-block; margin-top: 14px; padding: 8px 16px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s ease;
+}
+.btnProfile:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+.metaPill {
+  display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 600; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  white-space: nowrap;
+}
+.metaPill b { font-weight: 800; }
+.metaPill.cursoPill { background: var(--blue-light); color: var(--blue); border-color: transparent; font-weight: 700; }
+.metaPill.accent { background: #E4EEFB; color: #1D4ED8; border-color: transparent; font-weight: 700; }
+
+/* Número grande dentro de un óvalo (nota individual y promedio del programa). */
+.scoreOval {
+  font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1;
+  border: 2px solid var(--border); border-radius: 999px; padding: 8px 26px;
+}
+.scoreOvalSoft { color: var(--text-soft); }
+.scoreLabel { font-size: 11px; color: var(--text-soft); text-transform: uppercase; letter-spacing: .03em; text-align: center; }
+
+.deltaChip { padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.deltaChip.pos { background: var(--green-bg); color: var(--green); }
+.deltaChip.neg { background: var(--red-bg); color: var(--red); }
+.deltaChip.neu { background: var(--yellow-bg); color: var(--yellow); }
+
+/* Barras comparativas Programa vs Docente (escala 0–20) + desviación. */
+.compareBars { width: 100%; max-width: 240px; margin-top: 4px; display: flex; flex-direction: column; gap: 7px; }
+.compareRow { display: flex; align-items: center; gap: 8px; }
+.compareBarLabel { flex: none; width: 62px; font-size: 10.5px; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compareTrack { flex: 1 1 auto; height: 9px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.compareFillProg { height: 100%; background: var(--text-soft); border-radius: 5px; }
+.compareFillDoc { height: 100%; background: var(--blue); border-radius: 5px; }
+.compareDelta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+.compareDeltaLabel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--text-soft); }
+
+@media screen and (max-width: 760px) {
+  .docenteHeader { flex-direction: column; }
+  .profileScore, .profileCompare { border-left: none; border-top: 1px solid var(--border); padding: 16px 0 0; margin-top: 4px; }
+  .profileIdentity { padding-right: 0; }
+}
+
+.docenteHeaderPlaceholder { display: flex; align-items: center; gap: 16px; padding: 8px 4px; width: 100%; }
+.placeholderText { font-size: 17px; color: var(--text-soft); font-weight: 700; }
+.placeholderSub { font-size: 13px; color: var(--text-soft); margin-top: 4px; }
+
+/* Toggle Radar/Barras en la esquina superior derecha de la card "Desempeño
+   por criterio" (RadarPanel): sólo una de las dos vistas se muestra a la
+   vez, nunca ambas juntas. */
+.chartTypeToggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; flex: none; }
+.chartTypeToggle button { border: none; background: none; font: inherit; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--text-soft); cursor: pointer; transition: all .15s ease; }
+.chartTypeToggle button:hover { color: var(--text); }
+.chartTypeToggle .chartTypeActive { background: var(--blue); color: #fff; }
+.chartTypeToggle .chartTypeActive:hover { color: #fff; }
+
+/* Vista "Radar": alto explícito y sin el max-height:320px global de
+   .chartCard canvas (Card.module.css, pensado para gráficos de barra más
+   bajos) — con maintainAspectRatio:false (radarConfig) el radar llena
+   exactamente el alto que se le da, así que un contenedor más alto es lo
+   que lo hace ocupar todo el card en vez de verse chico/perdido. */
+.radarChartCol { min-width: 0; height: 460px; }
+.radarChartCol canvas { max-height: none !important; }
+
+/* Vista "Barras": desglose por criterio — código + etiqueta + nota +
+   desviación en una línea, y la barra 0-20 debajo ocupando todo el ancho
+   (en vez de compartir la fila con la etiqueta), para que tenga espacio de
+   verdad en vez de verse apretada. Más separación entre la línea del
+   criterio y su propia barra. */
+.criteriaBreakdown { display: flex; flex-direction: column; gap: 12px; }
+.criteriaBreakdownRow { display: flex; flex-direction: column; gap: 8px; }
+.criteriaBreakdownHeader { display: flex; align-items: baseline; gap: 6px; }
+.criteriaBreakdownShort { flex: none; font-size: 11px; font-weight: 800; color: var(--blue); }
+.criteriaBreakdownFull { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.criteriaBreakdownValue { flex: none; font-size: 12.5px; font-weight: 800; color: var(--text); }
+.criteriaBreakdownDelta { flex: none; width: 34px; text-align: right; font-size: 11px; font-weight: 700; }
+.criteriaBreakdownDeltaPos { color: var(--green); }
+.criteriaBreakdownDeltaNeg { color: var(--red); }
+.criteriaBreakdownDeltaNeu { color: var(--text-soft); }
+.criteriaBreakdownTrack { width: 100%; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.criteriaBreakdownFill { display: block; height: 100%; background: var(--blue); border-radius: 5px; }
+
+.estadoChip { padding: 8px 22px; border-radius: 10px; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.estadoChip.aprobado { background: var(--green-bg); color: #1e7e34; }
+.estadoChip.desaprobado { background: var(--red-bg); color: #b3261e; }
+
+.emptyState { padding: 40px; text-align: center; color: var(--text-soft); font-size: 13px; }
+
+.chartsGrid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 16px; }
+
+.btnMoreInfo {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 10px;
+  background: none; border: none; color: var(--blue); font-size: 12px; font-weight: 700;
+  cursor: pointer; padding: 0; font-family: 'Inter', sans-serif;
+}
+.btnMoreInfo:hover { text-decoration: underline; }
+
+.directivesList { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.directiveRow .directiveName { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.directiveRow .directiveName .pct { color: var(--text-soft); font-weight: 600; }
+.stackedMini { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--border); }
+.stackedMini div { height: 100%; }
+.stackedMini .si { background: var(--green); }
+.stackedMini .no { background: var(--red); }
+.stackedMini .av { background: var(--yellow); }
+.miniLegend { display: flex; gap: 14px; font-size: 11px; color: var(--text-soft); margin-top: 10px; }
+.miniLegend span { display: flex; align-items: center; gap: 5px; }
+.miniLegend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.miniLegend .si i { background: var(--green); }
+.miniLegend .no i { background: var(--red); }
+.miniLegend .av i { background: var(--yellow); }
+.directivesPieWrap { margin-top: 16px; height: 140px; border-top: 1px solid var(--border); padding-top: 16px; }
+
+/* Cuando la card vecina "Desempeño por criterio" muestra el radar (más alto,
+   ver .radarChartCol), este pie crece para que ambas cards guarden
+   concordancia; en "Barras" vuelve al alto normal de .directivesPieWrap. */
+.directivesPieWrapTall { height: 260px; }
+.directivesPieWrapTall canvas { max-height: none !important; }
+
+.pieChartCard { margin-top: 16px; max-width: 500px; margin-left: auto; margin-right: auto; }
+.pieChartCard h3 { text-align: center; }
+.pieChartCard p { text-align: center; }
+
+.docenteTabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-top: 10px; margin-bottom: 20px; }
+.docenteTabs button {
+  background: none; border: none; padding: 12px 4px; font-size: 14px; font-weight: 600;
+  color: var(--text-soft); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px;
+  font-family: 'Inter', sans-serif; transition: all 0.2s ease;
+}
+.docenteTabs button.active { color: var(--blue); border-bottom-color: var(--blue); }
+.docenteTabs button:hover:not(.active) { color: var(--text); border-bottom-color: var(--border); }
+
+.clickableCurso { color: var(--blue); cursor: pointer; font-weight: 600; text-decoration: underline; }
+.tableBarWrapper { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 90px; }
+.tableBarBg { flex-grow: 1; background-color: var(--border); height: 6px; border-radius: 3px; overflow: hidden; position: relative; }
+.tableBarFill { height: 100%; border-radius: 3px; position: absolute; left: 0; top: 0; transition: width 0.3s ease; }
+.tableBarFill.blue { background-color: var(--blue); }
+.tableBarFill.green { background-color: var(--green); }
+.tableBarValue { font-weight: 600; font-size: 13px; width: 35px; text-align: right; }
+
+.rawResponsesTable th:first-child { position: sticky; left: 0; background-color: var(--card); z-index: 3; border-right: 1px solid var(--border); min-width: 350px; }
+.rawResponsesTable td:first-child { position: sticky; left: 0; background-color: var(--card); z-index: 2; border-right: 1px solid var(--border); }
+.rawResponsesTable tbody tr:nth-child(even) td:first-child { background-color: #F8FAFC; }
+.rawResponsesTable tbody tr:hover td:first-child { background-color: #F1F5F9; }
+.rawResponsesTable thead th { cursor: default; text-align: center; }
+.rawResponsesTable thead th:first-child { text-align: left; }
+.sectionRow td { background-color: var(--blue-light); font-weight: 700; }
+.sectionRow td:first-child { background-color: var(--blue-light); border-right: 1px solid var(--border); z-index: 2; }
+.centerCell { text-align: center; }
+.rawEmptyCell { text-align: center; padding: 20px; color: var(--text-soft); }
+
+.printBar { display: flex; justify-content: flex-end; margin-top: 16px; gap: 10px; align-items: center; }
+.docenteFootnote { margin-top: 14px; font-size: 12px; color: var(--text-soft); text-align: center; line-height: 1.5; }
+
+.btnPrimary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: #7A1A2F; color: #fff; border: 1px solid transparent; padding: 8px 16px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.2s ease;
+}
+.btnPrimary svg { width: 18px; height: 18px; }
+.btnPrimary:hover { background: #5c1424; box-shadow: 0 2px 6px rgba(122, 26, 47, 0.3); }
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.excelBtn {
+  background: #ecfdf5; color: #059669; border-color: #a7f3d0; box-shadow: none;
+}
+.excelBtn:hover { background: #d1fae5; border-color: #34d399; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15); color: #047857; }
