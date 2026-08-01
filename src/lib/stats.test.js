@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeCriteriaAverages, computeDescriptiveStats, computeGroupStats } from './stats.js';
+import { computeCriteriaAverages, computeDescriptiveStats, computeGroupStats, classifyDocentesByEstado, computeDocenteVsPrograma } from './stats.js';
 
 const mkRow = (scores, directivas = []) => ({
   scores,
@@ -27,5 +27,43 @@ describe('estadísticas', () => {
     const g = computeGroupStats(rows);
     expect(g.n).toBe(2);
     expect(g.nota).toBeCloseTo(19, 5); // (20 + 18)/2
+  });
+});
+
+describe('classifyDocentesByEstado', () => {
+  it('clasifica aprobado (promedio >= 14) y desaprobado (< 14) por docente', () => {
+    const rows = [
+      { docente: 'Ana', notaFinal: 16 },
+      { docente: 'Ana', notaFinal: 14 },
+      { docente: 'Beto', notaFinal: 10 },
+      { docente: 'Beto', notaFinal: 12 },
+    ];
+    const result = classifyDocentesByEstado(rows);
+    expect(result.get('Ana')).toBe('aprobado');
+    expect(result.get('Beto')).toBe('desaprobado');
+  });
+
+  it('el umbral exacto 14 cuenta como aprobado', () => {
+    const rows = [{ docente: 'Cati', notaFinal: 14 }];
+    expect(classifyDocentesByEstado(rows).get('Cati')).toBe('aprobado');
+  });
+});
+
+describe('computeDocenteVsPrograma', () => {
+  it('calcula nota del docente, del programa, delta y aprobado', () => {
+    const cursoRows = [{ notaFinal: 16 }, { notaFinal: 14 }]; // avg 15
+    const programaRows = [{ notaFinal: 12 }, { notaFinal: 12 }]; // avg 12
+    const result = computeDocenteVsPrograma(cursoRows, programaRows);
+    expect(result.notaDocente).toBeCloseTo(15, 5);
+    expect(result.notaPrograma).toBeCloseTo(12, 5);
+    expect(result.delta).toBeCloseTo(3, 5);
+    expect(result.aprobado).toBe(true);
+    expect(result.n).toBe(2);
+  });
+
+  it('programaRows vacío no rompe (notaPrograma = 0)', () => {
+    const result = computeDocenteVsPrograma([{ notaFinal: 10 }], []);
+    expect(result.notaPrograma).toBe(0);
+    expect(result.aprobado).toBe(false);
   });
 });

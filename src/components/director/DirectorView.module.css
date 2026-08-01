@@ -1,13 +1,6 @@
 /* Portado desde reference/dashboard_evaluacion_docente.html
    (.filters-bar, .alert-banner, .kpi-grid, .charts-grid: líneas 105-123, 140-149, 248, 257). */
 
-.filtersBar {
-  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-}
-
 .alertBanner {
   display: flex; align-items: center; gap: 10px;
   background: var(--red-bg); color: var(--red); border: 1px solid #FCA5A5;
@@ -21,3 +14,19 @@
 .kpiGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
 
 .chartsGrid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 16px; }
+
+.printBarHeader { display: flex; gap: 10px; align-items: center; }
+.btnPrimary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: #7A1A2F; color: #fff; border: 1px solid transparent; padding: 8px 16px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.2s ease;
+}
+.btnPrimary svg { width: 18px; height: 18px; }
+.btnPrimary:hover { background: #5c1424; box-shadow: 0 2px 6px rgba(122, 26, 47, 0.3); }
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.excelBtn {
+  background: #ecfdf5; color: #059669; border-color: #a7f3d0; box-shadow: none;
+}
+.excelBtn:hover { background: #d1fae5; border-color: #34d399; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15); color: #047857; }

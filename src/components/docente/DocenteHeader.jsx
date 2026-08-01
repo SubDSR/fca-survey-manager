@@ -1,7 +1,8 @@
 import Card from '../common/Card.jsx';
-import { getDocenteCategoria, categoriaSlug } from '../../data/docenteCategoria.js';
-import { getDocenteFacultad } from '../../data/docenteFacultad.js';
+import { categoriaSlug } from '../../data/constants.js';
 import { uniqueSorted } from '../../lib/groups.js';
+import { computeDocenteVsPrograma } from '../../lib/stats.js';
+import ContextStrip from './ContextStrip.jsx';
 import styles from './DocenteView.module.css';
 
 /* Portado desde reference/dashboard_evaluacion_docente.html: renderDocenteHeader
@@ -16,7 +17,7 @@ function getInitials(name) {
   return (a + n).toUpperCase() || '--';
 }
 
-export default function DocenteHeader({ selected, cursoRows, programaRows }) {
+export default function DocenteHeader({ selected, cursoRows, programaRows, onMoreInfo }) {
   if (!selected) {
     return (
       <Card className={`docente-header ${styles.docenteHeader}`}>
@@ -44,61 +45,105 @@ export default function DocenteHeader({ selected, cursoRows, programaRows }) {
   const first = cursoRows[0];
   const ciclos = uniqueSorted(cursoRows, 'ciclo');
   const secciones = uniqueSorted(cursoRows, 'seccion');
-  const aulas = uniqueSorted(cursoRows, 'aula');
-  const categoria = getDocenteCategoria(first.docente);
-  const facultadOrigen = categoria === 'Nombrado - OF' ? getDocenteFacultad(first.docente) : null;
+  // Con "Todos los cursos" el perfil abarca varios cursos/programas; se muestra
+  // una etiqueta agregada en lugar del primero.
+  const cursosDistintos = uniqueSorted(cursoRows, 'curso');
+  const programasDistintos = uniqueSorted(cursoRows, 'programa');
+  const cursoMetaLabel = cursosDistintos.length === 1 ? cursosDistintos[0] : `Todos los cursos (${cursosDistintos.length})`;
+  const programaMetaLabel = programasDistintos.join(', ');
+  // categoría y facultad vienen enriquecidas en la fila desde el roster (docentes.csv).
+  const categoria = first.categoria || 'Sin categoría';
+  // Se muestra la procedencia para todos los docentes (por consistencia): los
+  // "Nombrado - OF" traen su facultad de origen y el resto, Ciencias Administrativas.
+  const facultadOrigen = first.facultad;
 
-  const notaDocente = cursoRows.reduce((a, r) => a + r.notaFinal, 0) / cursoRows.length;
-  const notaPrograma = programaRows.length
-    ? programaRows.reduce((a, r) => a + r.notaFinal, 0) / programaRows.length
-    : 0;
-
-  const delta = notaDocente - notaPrograma;
+  const { notaDocente, notaPrograma, delta, aprobado } = computeDocenteVsPrograma(cursoRows, programaRows);
   let deltaClass = styles.neu;
   let deltaSign = '';
   if (delta > 0.3) { deltaClass = styles.pos; deltaSign = '+'; }
   else if (delta < -0.3) { deltaClass = styles.neg; deltaSign = ''; }
 
-  const aprobado = notaDocente >= 14;
+  // Apellido para la barra comparativa (p. ej. "Olivares Taipe, Paulo César" -> "OLIVARES").
+  const apellidoLabel = (String(first.docente).split(',')[0].trim().split(/\s+/)[0] || first.docente).toUpperCase();
+  // Anchos de barra en escala 0–20 (mínimo visible del 2%).
+  const pctPrograma = Math.max(2, Math.min(100, (notaPrograma / 20) * 100));
+  const pctDocente = Math.max(2, Math.min(100, (notaDocente / 20) * 100));
 
   return (
-    <Card className={`docente-header ${styles.docenteHeader}`}>
-      <div className={styles.docenteId}>
-        <div className={styles.docenteIdTop}>
+    <>
+      <Card className={`docente-header ${styles.docenteHeader}`}>
+        {/* Sección 1 · Identidad del docente */}
+        <div className={styles.profileIdentity}>
           <div className={styles.docenteAvatar}>{getInitials(first.docente)}</div>
-          <div>
-            <h2>{first.docente}</h2>
-            <span className={`${styles.docenteCategoryPill} ${styles[categoriaSlug(categoria)] || ''}`}>{categoria}</span>
-            {facultadOrigen && (
-              <span className={styles.docenteFacultadTag}>Procedente de: <b>{facultadOrigen}</b></span>
-            )}
+          <div className={styles.docenteIdInfo}>
+            <h2 className={styles.profileName}>{first.docente}</h2>
+            <ul className={styles.profileMeta}>
+              <li>
+                <span className={styles.profileMetaLabel}>Estado:</span>
+                <span className={`${styles.docenteCategoryPill} ${styles[categoriaSlug(categoria)] || ''}`}>{categoria}</span>
+              </li>
+              {/* Procedencia (facultad) del docente, se muestra siempre que exista. */}
+              {facultadOrigen && (
+                <li>
+                  <span className={styles.profileMetaLabel}>Procedencia:</span>
+                  <b className={styles.profileMetaValue}>{facultadOrigen}</b>
+                </li>
+              )}
+            </ul>
+            {/* Placeholder: abrirá un modal con el perfil detallado del docente (por implementar). */}
+            <button
+              type="button"
+              className={`no-print ${styles.btnProfile}`}
+              onClick={() => onMoreInfo?.(first)}
+            >
+              Ver Perfil Detallado
+            </button>
           </div>
         </div>
-        <div className={styles.docenteMetaPills}>
-          <span className={styles.metaPill}>{first.programa}</span>
-          <span className={`${styles.metaPill} ${styles.cursoPill}`}>{first.curso}</span>
-          <span className={styles.metaPill}>Ciclo(s): <b>&nbsp;{ciclos.join(', ')}</b></span>
-          <span className={styles.metaPill}>Sección(es): <b>&nbsp;{secciones.join(', ')}</b></span>
-          <span className={styles.metaPill}>Aula(s): <b>&nbsp;{aulas.join(', ')}</b></span>
-          <span className={`${styles.metaPill} ${styles.accent}`}>{cursoRows.length} encuesta(s)</span>
-        </div>
-      </div>
-      <div className={styles.docenteScore}>
-        <div className={styles.scoreBox}>
-          <div className={styles.scoreValue}>{notaDocente.toFixed(1)}</div>
-          <div className={styles.scoreLabel}>Nota obtenida</div>
-        </div>
-        <div className={styles.scoreBox}>
-          <div className={styles.scoreValue} style={{ color: 'var(--text-soft)' }}>{notaPrograma.toFixed(1)}</div>
-          <div className={styles.scoreLabel}>Promedio del programa</div>
-        </div>
-        <div className={styles.scoreStatusWrap}>
-          <span className={`${styles.deltaChip} ${deltaClass}`}>{deltaSign}{delta.toFixed(1)} vs. programa</span>
+
+        {/* Sección 2 · Nota individual */}
+        <div className={styles.profileScore}>
+          <div className={styles.scoreOval}>{notaDocente.toFixed(1)}</div>
+          <div className={styles.scoreLabel}>Nota individual obtenida</div>
           <span className={`${styles.estadoChip} ${aprobado ? styles.aprobado : styles.desaprobado}`}>
-            {aprobado ? 'Aprobado' : 'Desaprobado'}
+            {aprobado ? 'Aprobado ✓' : 'Desaprobado'}
           </span>
         </div>
-      </div>
-    </Card>
+
+        {/* Sección 3 · Comparativa con el promedio del programa */}
+        <div className={styles.profileCompare}>
+          <div className={`${styles.scoreOval} ${styles.scoreOvalSoft}`}>{notaPrograma.toFixed(1)}</div>
+          <div className={styles.scoreLabel}>Promedio del programa</div>
+          <div className={styles.compareBars}>
+            <div className={styles.compareRow}>
+              <span className={styles.compareBarLabel}>Prog.</span>
+              <div className={styles.compareTrack}>
+                <div className={styles.compareFillProg} style={{ width: `${pctPrograma}%` }} />
+              </div>
+            </div>
+            <div className={styles.compareRow}>
+              <span className={styles.compareBarLabel}>{apellidoLabel}</span>
+              <div className={styles.compareTrack}>
+                <div className={styles.compareFillDoc} style={{ width: `${pctDocente}%` }} />
+              </div>
+            </div>
+            <div className={styles.compareDelta}>
+              <span className={styles.compareDeltaLabel}>Desviación</span>
+              <span className={`${styles.deltaChip} ${deltaClass}`}>{deltaSign}{delta.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Franja de contexto (estilo FIGMA ContextStrip): Programa | Curso | Ciclo |
+          Secciones | Encuestas. Debajo del Card de identidad/nota/comparativa. */}
+      <ContextStrip
+        programa={programaMetaLabel}
+        curso={cursoMetaLabel}
+        ciclos={ciclos.join(', ')}
+        secciones={secciones.join(', ')}
+        encuestas={cursoRows.length}
+      />
+    </>
   );
 }

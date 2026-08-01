@@ -92,10 +92,10 @@ function PrintCriteriaDetail({ cursoRows, programaRows, criteriaLabels }) {
               <tr key={i}>
                 <td className="label">{i + 1}. {label}</td>
                 <td className="value">{d.avg.toFixed(1)}</td>
-                <td className="value">{progAvg.toFixed(1)}</td>
-                <td className="value">{deltaSign}{delta.toFixed(1)}</td>
-                <td className="value">{d.min.toFixed(1)}&ndash;{d.max.toFixed(1)}</td>
-                <td className="value">{d.n}/{cursoRows.length}</td>
+                <td className="value soft">{progAvg.toFixed(1)}</td>
+                <td className="value soft">{deltaSign}{delta.toFixed(1)}</td>
+                <td className="value soft">{d.min.toFixed(1)}&ndash;{d.max.toFixed(1)}</td>
+                <td className="value soft">{d.n}/{cursoRows.length}</td>
               </tr>
             );
           })}

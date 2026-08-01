@@ -26,12 +26,38 @@ p{margin:0;}
    Los selectores de etiqueta (body, main, table, th, td) sí funcionan sin
    cambios porque no dependen de nombres de clase. */
 
+.only-print { display: none; }
+
 .print-header { display: none; }
 .print-footer { display: none; }
 .print-stat-box { display: none; }
+.print-metadata-box { display: none; }
 
 @media print {
-  @page { size: landscape; margin: 14mm 15mm 18mm; }
+  @page { size: A4 landscape; margin: 14mm 15mm 18mm; }
+
+  /* Force browsers to print background colors and images */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-metadata-box {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    font-size: 11.5px;
+    color: #334155;
+  }
+  .print-metadata-box .metadata-title {
+    font-weight: 800; color: #9C1F06; margin-bottom: 6px; display: block; text-transform: uppercase; font-size: 11px;
+  }
+  .print-metadata-box ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 16px; }
+  .print-metadata-box li { display: flex; gap: 5px; }
+  .print-metadata-box li strong { margin: 0; color: #111; font-weight: 700; display: inline; }
 
   .print-header {
     display: flex !important;
@@ -68,9 +94,17 @@ p{margin:0;}
      .docente-tabs, .view-toggle, .upload, .alert-banner, .modal-overlay,
      .btn-more-info del reference, líneas 487). */
   .no-print { display: none !important; }
+  .only-print { display: block !important; }
 
   body { background: #fff; color: #000; font-size: 11.5px; }
-  main { max-width: 100%; padding: 0; }
+  main, .content-shell { max-width: 100%; padding: 0; }
+
+  /* El Sidebar/TopbarRed viven dentro de un shell flex con h-screen +
+     overflow-hidden (AppLayout) para permitir scroll interno en pantalla.
+     Sin este reset, Chromium solo imprime la porción visible de ese shell
+     (equivalente a una sola "página" de scroll) en vez de todo el contenido
+     de <main>. */
+  html, body, .app-shell, .app-content, main { height: auto !important; overflow: visible !important; }
 
   .card { border: 1px solid #ddd !important; box-shadow: none !important; padding: 14px 16px; break-inside: avoid; margin-bottom: 16px; border-radius: 4px !important; }
   .chart-card h3 { color: #111; font-size: 14px; margin-bottom: 4px; border-bottom: 2px solid #9C1F06; padding-bottom: 6px; display: inline-block; }
@@ -109,6 +143,9 @@ p{margin:0;}
   .print-stat-box td { border: none !important; padding: 2px 4px !important; }
   .print-stat-box td.label { color: #555; }
   .print-stat-box td.value { text-align: right; font-weight: 700; }
+  /* En la tabla de criterios solo "Su promedio" va en negrita; las demás notas
+     (Prom. programa, Diferencia, Rango, N°) en peso normal para no diluir el énfasis. */
+  .print-stat-box td.value.soft { font-weight: 400; }
 
   table { border-collapse: collapse; border: 1px solid #bbb; width: 100%; }
   th, td { border: 1px solid #ccc !important; padding: 7px 9px; }

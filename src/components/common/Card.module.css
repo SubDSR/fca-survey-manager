@@ -6,6 +6,7 @@
 .sectionTitle{font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-soft); margin:28px 0 10px; font-weight:700;}
 .sectionTitle:first-child{margin-top:0;}
 
+.cardHeaderRow{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
 .chartCard h3{font-size:14px; margin-bottom:4px;}
 .chartCard .chartNote{font-size:11px; color:var(--text-soft); margin-bottom:10px;}
 .chartCard canvas{max-height:320px;}

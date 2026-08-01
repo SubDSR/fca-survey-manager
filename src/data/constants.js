@@ -1,4 +1,7 @@
-export const ID_FIELDS = ['programa', 'ciclo', 'seccion', 'aula', 'docente', 'curso', 'codigo'];
+export const ID_FIELDS = [
+  'programa', 'ciclo', 'seccion', 'aula', 'docente',
+  'apellidoPaterno', 'apellidoMaterno', 'nombres', 'curso', 'codigo',
+];
 
 export const ID_ALIASES = {
   programa: ['programa'],
@@ -6,6 +9,10 @@ export const ID_ALIASES = {
   seccion: ['seccion', 'sección', 'grupo'],
   aula: ['aula', 'salon', 'salón'],
   docente: ['docente', 'profesor', 'docentes', 'profesora'],
+  // Dataset con el nombre del docente separado en columnas (formato nuevo).
+  apellidoPaterno: ['apellido paterno', 'ap paterno', 'apellido 1'],
+  apellidoMaterno: ['apellido materno', 'ap materno', 'apellido 2'],
+  nombres: ['nombres', 'nombre'],
   curso: ['curso', 'asignatura', 'materia'],
   codigo: ['codigo', 'código', 'cod. encuesta', 'codigo encuesta'],
 };
@@ -23,3 +30,8 @@ export const LABEL_MAP = {
 };
 
 export const CATEGORIA_ORDER = ['Nombrado', 'Nombrado - OF', 'Contratado'];
+
+// Slug de la categoría para el nombre de clase CSS de la píldora (Docente).
+export function categoriaSlug(categoria) {
+  return String(categoria || '').toLowerCase().replace(/\s*-\s*/g, '-').replace(/\s+/g, '-');
+}
