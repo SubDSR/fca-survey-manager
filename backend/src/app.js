@@ -30,6 +30,6 @@ app.use('/api/programas', programasRouter);
 app.use('/api/periodos', periodosRouter);
 app.use('/api/cargas', cargasRouter);
 
-app.listen(PORT, () => {
-  console.log(`Backend escuchando en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend escuchando en el puerto ${PORT}`);
 });
