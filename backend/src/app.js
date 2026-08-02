@@ -7,6 +7,8 @@ import { swaggerSpec } from './config/swagger.js';
 import docentesRouter from './routes/docentes.js';
 import encuestasRouter from './routes/encuestas.js';
 import programasRouter from './routes/programas.js';
+import periodosRouter from './routes/periodos.js';
+import cargasRouter from './routes/cargas.js';
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/docentes', docentesRouter);
 app.use('/api/encuestas', encuestasRouter);
 app.use('/api/programas', programasRouter);
+app.use('/api/periodos', periodosRouter);
+app.use('/api/cargas', cargasRouter);
 
 app.listen(PORT, () => {
   console.log(`Backend escuchando en http://localhost:${PORT}`);

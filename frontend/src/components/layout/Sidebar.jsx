@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { id: 'gestion', icon: Users, label: 'Gestión de Docentes', disabled: false },
   { id: 'cursos', icon: BookOpen, label: 'Cursos y Programas', disabled: false },
   { id: 'reportes', icon: FileText, label: 'Reportes', disabled: true },
-  { id: 'config', icon: Settings, label: 'Configuración', disabled: true },
+  { id: 'config', icon: Settings, label: 'Configuración', disabled: false },
 ];
 
 export default function Sidebar({ view, onViewChange, sel, docenteStats }) {
