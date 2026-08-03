@@ -12,6 +12,13 @@
    hojas, estilos, colores, formatos numéricos, generación del workbook y la
    descarga vía Blob + <a download>) se mantiene EXACTAMENTE igual. */
 
+// TODO: si en algún momento se agrega numero_documento (DNI) a alguna hoja
+// exportada aquí, forzar el formato de celda como texto explícitamente
+// (cell.numFmt = '@' en exceljs) — hay DNIs peruanos reales que empiezan
+// en 0, y la columna en BD es TEXT justo por eso. Sin este formato,
+// Excel autodetecta la celda como número y recorta los ceros a la
+// izquierda. No aplica todavía: ningún export actual incluye este campo.
+//
 // TODO: se encontraron 65 docentes (2026-08-03) con numero_documento ya
 // truncado en la BD (7 dígitos en vez de 8) — confirmado que el 0
 // inicial ya se había perdido en staging.stg_docente_roster (num_doc

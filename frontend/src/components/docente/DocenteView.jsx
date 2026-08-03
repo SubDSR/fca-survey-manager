@@ -146,7 +146,10 @@ export default function DocenteView({
           selected={sel.selected} 
           cursoRows={cursoRows} 
           programaRows={programaRows} 
-          onMoreInfo={() => onIrAGestion(sel.selected)}
+          onMoreInfo={() => {
+            const first = cursoRows[0] || docenteRows[0];
+            if (first) onIrAGestion(first.docenteId);
+          }}
         />
 
         <PrintStatBox cursoRows={detailedCursoRows} programaAvgs={programaAvgs} criteriaLabels={criteriaLabels} />
