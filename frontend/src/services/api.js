@@ -18,25 +18,47 @@ async function request(url, options) {
   return { ok: res.ok, status: res.status, data };
 }
 
+// fetch() NO rechaza en un 4xx/5xx — solo en fallas de red. Sin esto, un
+// 500 con body { error: "..." } se resolvía igual que un 200, y ese objeto
+// de error terminaba guardado como si fueran los datos reales (p. ej.
+// criterios = { error: "..." } en vez de un array), reventando más tarde
+// en cualquier .forEach()/.map() consumidor sin que el .catch() de quien
+// llamó a este método se enterara nunca. fetchJson() sí rechaza en ese
+// caso, para que los .catch() ya existentes en toda la app (DataContext,
+// GestionView, CursoView, DocenteView, etc.) funcionen como se espera.
+async function fetchJson(url) {
+  const res = await fetch(url);
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    // sin body parseable
+  }
+  if (!res.ok) {
+    throw new Error((data && data.error) || `Error ${res.status} al llamar ${url}`);
+  }
+  return data;
+}
+
 export const api = {
   docentes: {
-    listar: () => fetch(`${BASE_URL}/api/docentes`).then(r => r.json()),
-    obtener: (id) => fetch(`${BASE_URL}/api/docentes/${id}`).then(r => r.json()),
+    listar: () => fetchJson(`${BASE_URL}/api/docentes`),
+    obtener: (id) => fetchJson(`${BASE_URL}/api/docentes/${id}`),
   },
   encuestas: {
-    consolidado: () => fetch(`${BASE_URL}/api/encuestas/consolidado`).then(r => r.json()),
-    seguimiento: () => fetch(`${BASE_URL}/api/encuestas/seguimiento`).then(r => r.json()),
-    criterios: () => fetch(`${BASE_URL}/api/encuestas/criterios`).then(r => r.json()),
-    directivas: () => fetch(`${BASE_URL}/api/encuestas/directivas`).then(r => r.json()),
+    consolidado: () => fetchJson(`${BASE_URL}/api/encuestas/consolidado`),
+    seguimiento: () => fetchJson(`${BASE_URL}/api/encuestas/seguimiento`),
+    criterios: () => fetchJson(`${BASE_URL}/api/encuestas/criterios`),
+    directivas: () => fetchJson(`${BASE_URL}/api/encuestas/directivas`),
     respuestas: (params = {}) => {
       const query = new URLSearchParams(
         Object.entries(params).filter(([, v]) => v !== undefined && v !== null)
       ).toString();
-      return fetch(`${BASE_URL}/api/encuestas/respuestas${query ? `?${query}` : ''}`).then(r => r.json());
+      return fetchJson(`${BASE_URL}/api/encuestas/respuestas${query ? `?${query}` : ''}`);
     },
   },
   programas: {
-    listar: () => fetch(`${BASE_URL}/api/programas`).then(r => r.json()),
+    listar: () => fetchJson(`${BASE_URL}/api/programas`),
   },
   periodos: {
     listar: () => request(`${BASE_URL}/api/periodos`),

@@ -11,7 +11,7 @@ import { criteriaBarConfig } from '../../lib/chartConfigs.js';
    filtrados a los grupos (docenteId+ciclo+seccion) presentes en `rows`. */
 
 export default function CriteriaChart({ rows }) {
-  const { criterios } = useData();
+  const { criterios, criteriosError } = useData();
   const config = useMemo(() => {
     const { labels, avgs } = computeCriteriaAveragesFromView(criterios, rows);
     return criteriaBarConfig(avgs, labels);
@@ -23,7 +23,11 @@ export default function CriteriaChart({ rows }) {
       note="Escala 1–20 · Dimensión I: Evaluación del desarrollo del curso"
       className={`chart-card ${cardStyles.chartCard}`}
     >
-      <BarChart data={config.data} options={config.options} />
+      {criteriosError ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>{criteriosError}</div>
+      ) : (
+        <BarChart data={config.data} options={config.options} />
+      )}
     </Card>
   );
 }

@@ -19,7 +19,7 @@ import styles from './DocenteView.module.css';
    nuevo. Nunca se muestran los dos a la vez. */
 
 export default function RadarPanel({ cursoRows, programaRows, onOpenCriteriaInfo, view, onViewChange }) {
-  const { criterios } = useData();
+  const { criterios, criteriosError } = useData();
 
   const { config, docenteAvgs, programaAvgs, labels } = useMemo(() => {
     const docente = computeCriteriaAveragesFromView(criterios, cursoRows);
@@ -60,12 +60,15 @@ export default function RadarPanel({ cursoRows, programaRows, onOpenCriteriaInfo
       headerAction={headerAction}
       className={`chart-card ${cardStyles.chartCard}`}
     >
-      {hasData && view === 'radar' && (
+      {criteriosError && (
+        <div className={styles.emptyState}>{criteriosError}</div>
+      )}
+      {!criteriosError && hasData && view === 'radar' && (
         <div className={styles.radarChartCol}>
           <RadarChart data={config.data} options={config.options} />
         </div>
       )}
-      {hasData && view === 'barras' && (
+      {!criteriosError && hasData && view === 'barras' && (
         <div className={styles.criteriaBreakdown}>
           {labels.map((label, i) => {
             const value = docenteAvgs[i] || 0;
