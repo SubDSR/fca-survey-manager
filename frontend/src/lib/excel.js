@@ -12,6 +12,16 @@
    hojas, estilos, colores, formatos numéricos, generación del workbook y la
    descarga vía Blob + <a download>) se mantiene EXACTAMENTE igual. */
 
+// TODO: se encontraron 65 docentes (2026-08-03) con numero_documento ya
+// truncado en la BD (7 dígitos en vez de 8) — confirmado que el 0
+// inicial ya se había perdido en staging.stg_docente_roster (num_doc
+// llegó con sufijo ".0", señal inequívoca de que algún punto de esa
+// carga leyó la columna como número, no como texto). Si en el futuro se
+// agrega un proceso que importe/actualice DNIs de docentes (un roster
+// nuevo, similar al ETL de encuestas), la columna debe tratarse como
+// texto desde el primer punto de lectura del archivo fuente (p. ej. en
+// csv-parse/xlsx, forzar el tipo string de esa columna) — nunca dejar
+// que se infiera como número en ningún paso intermedio.
 import ExcelJS from 'exceljs';
 import { Chart } from 'chart.js';
 import '../components/charts/registerCharts.js';
