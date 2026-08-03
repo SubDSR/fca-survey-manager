@@ -12,6 +12,12 @@
    hojas, estilos, colores, formatos numéricos, generación del workbook y la
    descarga vía Blob + <a download>) se mantiene EXACTAMENTE igual. */
 
+// TODO: si en algún momento se agrega numero_documento (DNI) a alguna hoja
+// exportada aquí, forzar el formato de celda como texto explícitamente
+// (cell.numFmt = '@' en exceljs) — hay DNIs peruanos reales que empiezan
+// en 0, y la columna en BD es TEXT justo por eso. Sin este formato,
+// Excel autodetecta la celda como número y recorta los ceros a la
+// izquierda. No aplica todavía: ningún export actual incluye este campo.
 import ExcelJS from 'exceljs';
 import { Chart } from 'chart.js';
 import '../components/charts/registerCharts.js';

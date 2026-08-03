@@ -21,7 +21,7 @@ export default function App() {
   const [view, setView] = useState('director');
   const [modal, setModal] = useState(EMPTY_MODAL);
   const [pendingDocenteSelection, setPendingDocenteSelection] = useState(null);
-  const [pendingGestionSearch, setPendingGestionSearch] = useState(null);
+  const [pendingGestionId, setPendingGestionId] = useState(null);
 
   // Los filtros compartidos (Categoría/Programa/Ciclo/Sección/Docente/Estado)
   // y la selección de Vista Docente se calculan ambos sobre groupRows (GET
@@ -45,6 +45,10 @@ export default function App() {
       nValidas: cursoRows.reduce((a, r) => a + (r.nValidas || 0), 0),
     }
     : null;
+
+  const activeDocenteIds = useMemo(() => {
+    return new Set(groupRows.map((r) => r.docenteId));
+  }, [groupRows]);
 
   const openModal = (kind, payload) => setModal({ kind, payload });
   const closeModal = () => setModal(EMPTY_MODAL);
@@ -84,12 +88,12 @@ export default function App() {
   // sin pasar por aquí, para sí forzar una nueva selección pendiente.
   const handleViewChange = (nextView) => {
     setPendingDocenteSelection(null);
-    setPendingGestionSearch(null);
+    setPendingGestionId(null);
     setView(nextView);
   };
 
-  const handleIrAGestion = (docenteName) => {
-    setPendingGestionSearch(docenteName);
+  const handleIrAGestion = (docenteId) => {
+    setPendingGestionId(docenteId);
     setView('gestion');
   };
 
@@ -133,10 +137,10 @@ export default function App() {
           />
         )}
         {status === 'ready' && view === 'gestion' && (
-          <GestionView initialSearch={pendingGestionSearch} />
-        )}
-        {status === 'ready' && view === 'config' && (
-          <ConfigView />
+          <GestionView
+            initialDocenteId={pendingGestionId}
+            activeDocenteIds={activeDocenteIds}
+          />
         )}
         {status === 'ready' && view === 'config' && (
           <ConfigView />
