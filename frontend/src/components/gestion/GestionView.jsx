@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, GraduationCap, User, BookOpen, Edit2, ShieldCheck, Users as UsersIcon, ChevronLeft, ChevronRight, History, TrendingUp, BarChart2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './GestionView.module.css';
-import mockTeachers from '../../data/mockTeachers.json';
+import { api } from '../../services/api.js';
 
 // Helper to convert ALL CAPS to Title Case
 function toTitleCase(str) {
@@ -33,25 +33,55 @@ function getStatusClass(condicion) {
   return styles.default;
 }
 
-export default function GestionView({ initialSearch }) {
-  const [search, setSearch] = useState(initialSearch || '');
-  const [selectedId, setSelectedId] = useState(null);
+export default function GestionView({ initialDocenteId, activeDocenteIds }) {
+  const [search, setSearch] = useState('');
+  const [selectedId, setSelectedId] = useState(initialDocenteId || null);
   const [currentPage, setCurrentPage] = useState(1);
   const [chartView, setChartView] = useState('historico');
   const itemsPerPage = 20;
 
-  // Filter mock data
+  const [docentes, setDocentes] = useState([]);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    api.docentes.listar()
+      .then(data => { if (active) setDocentes(data); })
+      .catch(console.error);
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setSelectedProfile(null);
+      return;
+    }
+    let active = true;
+    api.docentes.obtener(selectedId)
+      .then(data => { if (active) setSelectedProfile(data); })
+      .catch(console.error);
+    return () => { active = false; };
+  }, [selectedId]);
+
+  // Filter db data
   const filteredTeachers = useMemo(() => {
     const term = normKey(search);
-    if (!term) return mockTeachers;
-    return mockTeachers.filter(t => 
-      normKey(t.nombreCompleto).includes(term) || 
-      normKey(t.numDoc || '').includes(term)
+    
+    // Filtrar para mostrar solo docentes de la campaña actual
+    let activeTeachers = docentes;
+    if (activeDocenteIds && activeDocenteIds.size > 0) {
+      activeTeachers = docentes.filter(t => activeDocenteIds.has(t.id));
+    }
+
+    if (!term) return activeTeachers;
+    return activeTeachers.filter(t => 
+      normKey(t.nombre_completo).includes(term) || 
+      normKey(t.numero_documento || '').includes(term)
     );
-  }, [search]);
+  }, [search, docentes, activeDocenteIds]);
 
   // Reset page when search changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [search]);
 
@@ -63,12 +93,12 @@ export default function GestionView({ initialSearch }) {
     return filteredTeachers.slice(start, start + itemsPerPage);
   }, [filteredTeachers, currentPage]);
 
-  // Set initial selected if none
-  if (!selectedId && paginatedTeachers.length > 0) {
-    setSelectedId(paginatedTeachers[0].id);
-  }
-
-  const selectedTeacher = mockTeachers.find(t => t.id === selectedId);
+  // Set initial selected if none and loaded
+  useEffect(() => {
+    if (!selectedId && paginatedTeachers.length > 0) {
+      setSelectedId(paginatedTeachers[0].id);
+    }
+  }, [paginatedTeachers, selectedId]);
 
   return (
     <div className={styles.gestionContainer}>
@@ -95,13 +125,13 @@ export default function GestionView({ initialSearch }) {
               className={`${styles.teacherItem} ${selectedId === teacher.id ? styles.active : ''}`}
               onClick={() => setSelectedId(teacher.id)}
             >
-              <div className={styles.teacherName}>{toTitleCase(teacher.nombreCompleto)}</div>
+              <div className={styles.teacherName}>{toTitleCase(teacher.nombre_completo)}</div>
               <div className={styles.teacherMeta}>
                 <span className={styles.teacherFaculty} title={teacher.facultad || 'Sin Facultad'}>
                   {toTitleCase(teacher.facultad) || 'Sin Facultad'}
                 </span>
-                <span className={`${styles.statusChip} ${getStatusClass(teacher.categoria)}`}>
-                  {toTitleCase(teacher.categoria)}
+                <span className={`${styles.statusChip} ${getStatusClass(teacher.condicion)}`}>
+                  {toTitleCase(teacher.condicion)}
                 </span>
               </div>
             </div>
@@ -135,22 +165,22 @@ export default function GestionView({ initialSearch }) {
 
       {/* Vista de Perfil */}
       <div className={styles.profileView}>
-        {selectedTeacher ? (
+        {selectedProfile ? (
           <>
             <div className={styles.profileHeader}>
               <div className={styles.avatar}>
-                {selectedTeacher.nombres ? selectedTeacher.nombres.charAt(0).toUpperCase() : 'D'}
+                {selectedProfile.nombre_completo ? selectedProfile.nombre_completo.charAt(0).toUpperCase() : 'D'}
               </div>
               <div className={styles.headerInfo}>
                 <div className={styles.profileName}>
-                  {toTitleCase(selectedTeacher.nombreCompleto)}
+                  {toTitleCase(selectedProfile.nombre_completo)}
                   <ShieldCheck size={20} className="text-blue-600" />
                 </div>
                 <div className={styles.profileSubtitle}>
-                  {toTitleCase(selectedTeacher.categoria)} • {toTitleCase(selectedTeacher.facultad) || 'Sin Facultad'}
+                  {toTitleCase(selectedProfile.condicion)} • {toTitleCase(selectedProfile.facultad) || 'Sin Facultad'}
                 </div>
                 <div className={styles.profileId}>
-                  ID DOCENTE: {selectedTeacher.numDoc || 'N/A'}
+                  ID DOCENTE: {selectedProfile.numero_documento || 'N/A'}
                 </div>
               </div>
               <button className={styles.editButton}>
@@ -164,21 +194,21 @@ export default function GestionView({ initialSearch }) {
                 <div className={styles.dataGrid}>
                   <div className={styles.dataRow}>
                     <div className={styles.dataLabel}>Tipo Doc.</div>
-                    <div className={styles.dataValue}>{selectedTeacher.tipoDoc || '-'}</div>
+                    <div className={styles.dataValue}>{selectedProfile.tipo_documento || '-'}</div>
                   </div>
                   <div className={styles.dataRow}>
                     <div className={styles.dataLabel}>N° Doc.</div>
-                    <div className={styles.dataValue}>{selectedTeacher.numDoc || '-'}</div>
+                    <div className={styles.dataValue}>{selectedProfile.numero_documento || '-'}</div>
                   </div>
                   <div className={styles.dataRow}>
                     <div className={styles.dataLabel}>Correo Inst.</div>
-                    <div className={styles.dataValue}>{selectedTeacher.correo ? selectedTeacher.correo.toLowerCase() : '-'}</div>
+                    <div className={styles.dataValue}>{selectedProfile.correo_institucional ? selectedProfile.correo_institucional.toLowerCase() : '-'}</div>
                   </div>
                   <div className={styles.dataRow}>
                     <div className={styles.dataLabel}>Condición</div>
                     <div className={styles.dataValue}>
-                      <span className={`${styles.statusChip} ${getStatusClass(selectedTeacher.categoria)}`}>
-                        {toTitleCase(selectedTeacher.categoria)}
+                      <span className={`${styles.statusChip} ${getStatusClass(selectedProfile.condicion)}`}>
+                        {toTitleCase(selectedProfile.condicion)}
                       </span>
                     </div>
                   </div>
@@ -190,11 +220,11 @@ export default function GestionView({ initialSearch }) {
                 <div className={styles.dataGrid}>
                   <div className={styles.dataRow}>
                     <div className={styles.dataLabel}>Facultad</div>
-                    <div className={styles.dataValue}>{toTitleCase(selectedTeacher.facultad) || '-'}</div>
+                    <div className={styles.dataValue}>{toTitleCase(selectedProfile.facultad) || '-'}</div>
                   </div>
                   <div className={styles.dataRow}>
                     <div className={styles.dataLabel}>Grado Académico</div>
-                    <div className={styles.dataValue}>{toTitleCase(selectedTeacher.grado) || '-'}</div>
+                    <div className={styles.dataValue}>{toTitleCase(selectedProfile.grado_academico) || '-'}</div>
                   </div>
                 </div>
               </div>
@@ -202,7 +232,7 @@ export default function GestionView({ initialSearch }) {
 
             <div className={styles.card} style={{ marginBottom: '40px' }}>
               <div className={styles.cardTitle}><BookOpen size={18} /> Asignación Actual (Encuestas)</div>
-              {selectedTeacher.asignaciones && selectedTeacher.asignaciones.length > 0 ? (
+              {selectedProfile.cursos && selectedProfile.cursos.length > 0 ? (
                 <div className={styles.tableContainer}>
                   <table className={styles.table}>
                     <thead>
@@ -214,9 +244,9 @@ export default function GestionView({ initialSearch }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedTeacher.asignaciones.map((ac, i) => (
+                      {selectedProfile.cursos.map((ac, i) => (
                         <tr key={i}>
-                          <td>{ac.curso}</td>
+                          <td>{ac.asignatura}</td>
                           <td>{ac.programa}</td>
                           <td>{ac.ciclo || '-'}</td>
                           <td>{ac.seccion || '-'}</td>
@@ -234,7 +264,7 @@ export default function GestionView({ initialSearch }) {
             </div>
 
             {/* Nueva Sección: Evaluación de Desempeño */}
-            {selectedTeacher.evaluaciones && selectedTeacher.evaluaciones.length > 0 && (
+            {selectedProfile.evaluaciones && selectedProfile.evaluaciones.length > 0 && (
               <div className={styles.evaluationSection}>
                 <div className={styles.sectionHeader}>
                   <h3 className={styles.sectionTitle}>
@@ -242,7 +272,7 @@ export default function GestionView({ initialSearch }) {
                     Evaluación de Desempeño Docente
                   </h3>
                   <p className={styles.sectionSubtitle}>
-                    Monitoreo detallado del rendimiento académico y métricas de satisfacción estudiantil.
+                    Monitoreo detallado del rendimiento académico y métricas de satisfaction estudiantil.
                   </p>
                 </div>
 
@@ -254,7 +284,7 @@ export default function GestionView({ initialSearch }) {
                     </div>
                     <div className={styles.metricInfo}>
                       <div className={styles.metricLabel}>PROMEDIO HISTÓRICO</div>
-                      <div className={styles.metricValue}>{selectedTeacher.promedioHistorico || '0.00'}</div>
+                      <div className={styles.metricValue}>{selectedProfile.promedioHistorico || '0.00'}</div>
                       <div className={styles.metricSubtext}>Basado en ciclos anteriores</div>
                     </div>
                   </div>
@@ -266,7 +296,7 @@ export default function GestionView({ initialSearch }) {
                     </div>
                     <div className={styles.metricInfo}>
                       <div className={styles.metricLabel}>PROMEDIO CICLO ACTUAL</div>
-                      <div className={styles.metricValue}>{selectedTeacher.promedioActual || '0.00'}</div>
+                      <div className={styles.metricValue}>{selectedProfile.promedioActual || '0.00'}</div>
                       <div className={styles.metricSubtext} style={{ color: '#16a34a' }}>
                         ● Actualizado: Última encuesta
                       </div>
@@ -320,7 +350,7 @@ export default function GestionView({ initialSearch }) {
                   <div className={styles.chartContainer}>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart 
-                        data={chartView === 'historico' ? selectedTeacher.evaluaciones : selectedTeacher.evaluacionesCiclo} 
+                        data={chartView === 'historico' ? selectedProfile.evaluaciones : selectedProfile.evaluacionesCiclo} 
                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
