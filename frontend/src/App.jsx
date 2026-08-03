@@ -20,6 +20,7 @@ export default function App() {
   const [view, setView] = useState('director');
   const [modal, setModal] = useState(EMPTY_MODAL);
   const [pendingDocenteSelection, setPendingDocenteSelection] = useState(null);
+  const [pendingGestionSearch, setPendingGestionSearch] = useState(null);
 
   // Los filtros compartidos (Categoría/Programa/Ciclo/Sección/Docente/Estado)
   // y la selección de Vista Docente se calculan ambos sobre groupRows (GET
@@ -82,7 +83,13 @@ export default function App() {
   // sin pasar por aquí, para sí forzar una nueva selección pendiente.
   const handleViewChange = (nextView) => {
     setPendingDocenteSelection(null);
+    setPendingGestionSearch(null);
     setView(nextView);
+  };
+
+  const handleIrAGestion = (docenteName) => {
+    setPendingGestionSearch(docenteName);
+    setView('gestion');
   };
 
   return (
@@ -103,6 +110,7 @@ export default function App() {
         )}
         {status === 'ready' && view === 'docente' && (
           <DocenteView
+            onIrAGestion={handleIrAGestion}
             onOpenCriteriaInfo={(cursoRows) => openModal('criteria', cursoRows)}
             onOpenCurso={(group) => openModal('curso', group)}
             sel={sel}
@@ -124,7 +132,7 @@ export default function App() {
           />
         )}
         {status === 'ready' && view === 'gestion' && (
-          <GestionView />
+          <GestionView initialSearch={pendingGestionSearch} />
         )}
         {status === 'error' && <p>{error}</p>}
         {status !== 'ready' && status !== 'error' && <EmptyState />}

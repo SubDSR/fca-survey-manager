@@ -33,8 +33,8 @@ function getStatusClass(condicion) {
   return styles.default;
 }
 
-export default function GestionView() {
-  const [search, setSearch] = useState('');
+export default function GestionView({ initialSearch }) {
+  const [search, setSearch] = useState(initialSearch || '');
   const [selectedId, setSelectedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [chartView, setChartView] = useState('historico');
