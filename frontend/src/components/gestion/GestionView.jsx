@@ -37,11 +37,11 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(initialDocenteId || null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [chartView, setChartView] = useState('historico');
   const itemsPerPage = 20;
 
   const [docentes, setDocentes] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -54,12 +54,18 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
   useEffect(() => {
     if (!selectedId) {
       setSelectedProfile(null);
+      setIsLoadingProfile(false);
       return;
     }
     let active = true;
+    // No se limpia selectedProfile aquí: se deja el perfil anterior visible
+    // (con opacidad reducida vía isLoadingProfile) hasta que llegue el
+    // nuevo, para evitar el parpadeo a vacío mientras carga.
+    setIsLoadingProfile(true);
     api.docentes.obtener(selectedId)
       .then(data => { if (active) setSelectedProfile(data); })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => { if (active) setIsLoadingProfile(false); });
     return () => { active = false; };
   }, [selectedId]);
 
@@ -164,7 +170,10 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
       </div>
 
       {/* Vista de Perfil */}
-      <div className={styles.profileView}>
+      <div
+        className={styles.profileView}
+        style={{ opacity: isLoadingProfile ? 0.4 : 1, transition: 'opacity 180ms ease' }}
+      >
         {selectedProfile ? (
           <>
             <div className={styles.profileHeader}>
@@ -272,7 +281,7 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
                     Evaluación de Desempeño Docente
                   </h3>
                   <p className={styles.sectionSubtitle}>
-                    Monitoreo detallado del rendimiento académico y métricas de satisfaction estudiantil.
+                    Monitoreo detallado del rendimiento académico y métricas de satisfacción estudiantil.
                   </p>
                 </div>
 
@@ -298,7 +307,7 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
                       <div className={styles.metricLabel}>PROMEDIO CICLO ACTUAL</div>
                       <div className={styles.metricValue}>{selectedProfile.promedioActual || '0.00'}</div>
                       <div className={styles.metricSubtext} style={{ color: '#16a34a' }}>
-                        ● Actualizado: Última encuesta
+                        ● Período académico en curso
                       </div>
                     </div>
                   </div>
@@ -306,51 +315,13 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
 
                 {/* Gráfico de Evolución */}
                 <div className={styles.card} style={{ marginTop: '24px' }}>
-                  <div className={styles.cardTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Evolución del Promedio {chartView === 'historico' ? 'por Periodo Académico' : 'por Fecha de Encuesta'}</span>
-                    
-                    {/* Toggle Buttons */}
-                    <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px' }}>
-                      <button 
-                        onClick={() => setChartView('historico')}
-                        style={{
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          borderRadius: '6px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          background: chartView === 'historico' ? 'white' : 'transparent',
-                          color: chartView === 'historico' ? '#0f172a' : '#64748b',
-                          boxShadow: chartView === 'historico' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Histórico
-                      </button>
-                      <button 
-                        onClick={() => setChartView('ciclo')}
-                        style={{
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          borderRadius: '6px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          background: chartView === 'ciclo' ? 'white' : 'transparent',
-                          color: chartView === 'ciclo' ? '#0f172a' : '#64748b',
-                          boxShadow: chartView === 'ciclo' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Ciclo Actual
-                      </button>
-                    </div>
+                  <div className={styles.cardTitle}>
+                    <span>Evolución del Promedio por Periodo Académico</span>
                   </div>
                   <div className={styles.chartContainer}>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart 
-                        data={chartView === 'historico' ? selectedProfile.evaluaciones : selectedProfile.evaluacionesCiclo} 
+                      <LineChart
+                        data={selectedProfile.evaluaciones}
                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
