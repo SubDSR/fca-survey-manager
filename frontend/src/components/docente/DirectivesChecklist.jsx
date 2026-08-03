@@ -13,7 +13,7 @@ import styles from './DocenteView.module.css';
    filtrado al grupo (docenteId+ciclo+seccion) de cursoRows. */
 
 export default function DirectivesChecklist({ cursoRows, tall }) {
-  const { directivas } = useData();
+  const { directivas, directivasError } = useData();
   const breakdown = useMemo(
     () => computeDirectiveBreakdownFromView(directivas, cursoRows),
     [directivas, cursoRows]
@@ -29,7 +29,9 @@ export default function DirectivesChecklist({ cursoRows, tall }) {
       note="Respuestas obtenidas en el grupo filtrado"
       className={`chart-card ${cardStyles.chartCard}`}
     >
-      {hasChecklistData ? (
+      {directivasError ? (
+        <div className={styles.emptyState}>{directivasError}</div>
+      ) : hasChecklistData ? (
         <div className={styles.directivesList}>
           {breakdown.map((b) => (
             <div key={b.label} className={styles.directiveRow}>
