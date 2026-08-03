@@ -56,3 +56,36 @@ export function getFollowUpGroups(groups) {
   flaggedGroups.sort((a, b) => a.nota - b.nota);
   return flaggedGroups;
 }
+
+export function aggregateByDocente(groups) {
+  const map = new Map();
+  groups.forEach(g => {
+    if (!map.has(g.docente)) {
+      map.set(g.docente, {
+        docente: g.docente,
+        programa: new Set(),
+        curso: new Set(),
+        notaSum: 0,
+        cumplSum: 0,
+        nSum: 0,
+        nValidasSum: 0,
+      });
+    }
+    const d = map.get(g.docente);
+    if (g.programa) d.programa.add(g.programa);
+    if (g.curso) d.curso.add(g.curso);
+    d.notaSum += g.nota * g.n;
+    d.cumplSum += g.cumplimiento * g.n;
+    d.nSum += g.n;
+    d.nValidasSum += g.nValidas || 0;
+  });
+
+  return Array.from(map.values()).map(d => ({
+    docente: d.docente,
+    programa: Array.from(d.programa).join(', '),
+    curso: Array.from(d.curso).join('\n'),
+    nota: d.nSum ? d.notaSum / d.nSum : 0,
+    cumplimiento: d.nSum ? Math.round(d.cumplSum / d.nSum) : 0,
+    n: d.nValidasSum || d.nSum,
+  }));
+}

@@ -34,7 +34,7 @@ p{margin:0;}
 .print-metadata-box { display: none; }
 
 @media print {
-  @page { size: A4 landscape; margin: 14mm 15mm 18mm; }
+  @page { size: A4 portrait; margin: 14mm 15mm 18mm; }
 
   /* Force browsers to print background colors and images */
   * {
@@ -96,7 +96,8 @@ p{margin:0;}
   .no-print { display: none !important; }
   .only-print { display: block !important; }
 
-  body { background: #fff; color: #000; font-size: 11.5px; }
+  /* Aplicar zoom para que el diseño ancho quepa en la hoja vertical sin deformarse */
+  body { background: #fff; color: #000; font-size: 11.5px; zoom: 0.7; }
   main, .content-shell { max-width: 100%; padding: 0; }
 
   /* El Sidebar/TopbarRed viven dentro de un shell flex con h-screen +

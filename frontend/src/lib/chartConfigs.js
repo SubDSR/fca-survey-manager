@@ -21,9 +21,19 @@ export function criteriaBarConfig(criteriaAvgs, labels) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end',
+          align: 'start',
+          color: '#ffffff',
+          offset: 6,
+          font: { weight: 'bold', family: 'Inter', size: 11 },
+          formatter: (val) => Number(val).toFixed(1)
+        }
+      },
       scales: {
-        x: { min: 0, max: 20, grid: { color: '#E0E6ED' } },
+        x: { min: 0, max: 20, grid: { drawOnChartArea: false, color: '#E0E6ED' } },
         y: { grid: { display: false } }
       }
     }
@@ -43,7 +53,14 @@ export function directivesBarConfig(breakdown) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } },
+      plugins: {
+        legend: { position: 'bottom' },
+        datalabels: {
+          color: '#fff',
+          font: { weight: 'bold', family: 'Inter', size: 10 },
+          formatter: (val) => val >= 5 ? val + '%' : ''
+        }
+      },
       scales: {
         x: { stacked: true, grid: { display: false } },
         y: { stacked: true, min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: '#E0E6ED' } }
@@ -92,7 +109,7 @@ export function cicloTrendConfig(rowsByCiclo) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } },
+      plugins: { legend: { position: 'bottom' }, datalabels: { display: false } },
       scales: {
         x: { grid: { display: false } },
         yNota: { position: 'left', min: 0, max: 20, title: { display: true, text: 'Nota (0–20)' }, grid: { color: '#E0E6ED' } },
@@ -142,7 +159,7 @@ export function radarConfig(labels, docenteAvgs, programaAvgs) {
           angleLines: { color: '#E0E6ED' }
         }
       },
-      plugins: { legend: { position: 'bottom' } }
+      plugins: { legend: { position: 'bottom' }, datalabels: { display: false } }
     }
   };
 }
@@ -162,6 +179,7 @@ export function directivesPieConfig(counts) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+        datalabels: { display: false },
         legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11, family: 'Inter' } } },
         tooltip: {
           callbacks: {
@@ -195,6 +213,7 @@ export function coursePieConfig(labels, data) {
       maintainAspectRatio: false,
       cutout: '65%',
       plugins: {
+        datalabels: { display: false },
         legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11, family: 'Inter' } } },
         tooltip: {
           callbacks: {

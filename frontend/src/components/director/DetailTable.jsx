@@ -75,27 +75,55 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-  const [isPrinting, setIsPrinting] = useState(false);
-
-  useEffect(() => {
-    const handleBeforePrint = () => setIsPrinting(true);
-    const handleAfterPrint = () => setIsPrinting(false);
-    window.addEventListener('beforeprint', handleBeforePrint);
-    window.addEventListener('afterprint', handleAfterPrint);
-    return () => {
-      window.removeEventListener('beforeprint', handleBeforePrint);
-      window.removeEventListener('afterprint', handleAfterPrint);
-    };
-  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [groups, search, sort]);
 
   const totalPages = Math.ceil(allFilteredRows.length / itemsPerPage);
-  const paginatedRows = isPrinting 
-    ? allFilteredRows 
-    : allFilteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedRows = allFilteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const renderRow = (g) => (
+    <tr key={[g.docente, g.programa].join('|||')}>
+      <td
+        className={styles.clickableDocente}
+        role="button"
+        tabIndex={0}
+        title="Ver desempeño individual de este docente"
+        onClick={() => onSelectDocente(g)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDocente(g); }
+        }}
+      >
+        {g.docente}
+      </td>
+      <td>{g.programa}</td>
+      <td>
+        {g.curso.map((c, i) => (
+          <div key={i} style={{ marginBottom: i < g.curso.length - 1 ? '4px' : 0 }}>
+            {c}
+          </div>
+        ))}
+      </td>
+      <td>
+        <div className={styles.tableBarWrapper}>
+          <div className={styles.tableBarBg}>
+            <div className={`${styles.tableBarFill} ${styles.blue}`} style={{ width: `${(g.nota / 20) * 100}%` }} />
+          </div>
+          <div className={styles.tableBarValue}>{g.nota.toFixed(1)}</div>
+        </div>
+      </td>
+      <td>
+        <div className={styles.tableBarWrapper}>
+          <div className={styles.tableBarBg}>
+            <div className={`${styles.tableBarFill} ${styles.green}`} style={{ width: `${g.cumplimiento}%` }} />
+          </div>
+          <div className={styles.tableBarValue}>{g.cumplimiento}%</div>
+        </div>
+      </td>
+      <td>{g.n}</td>
+    </tr>
+  );
 
   return (
     <Card className={`table-card ${cardStyles.tableCard}`}>
@@ -112,55 +140,31 @@ export default function DetailTable({ groups, search, onSearchChange, sort, onSo
           />
         </div>
       </div>
-      <DataTable
-        columns={COLUMNS}
-        rows={paginatedRows}
-        sort={sort}
-        onSort={onSort}
-        emptyMessage="No se encontraron resultados para los filtros seleccionados."
-        renderRow={(g) => (
-          <tr key={[g.docente, g.programa].join('|||')}>
-            <td
-              className={styles.clickableDocente}
-              role="button"
-              tabIndex={0}
-              title="Ver desempeño individual de este docente"
-              onClick={() => onSelectDocente(g)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectDocente(g); }
-              }}
-            >
-              {g.docente}
-            </td>
-            <td>{g.programa}</td>
-            <td>
-              {g.curso.map((c, i) => (
-                <div key={i} style={{ marginBottom: i < g.curso.length - 1 ? '4px' : 0 }}>
-                  {c}
-                </div>
-              ))}
-            </td>
-            <td>
-              <div className={styles.tableBarWrapper}>
-                <div className={styles.tableBarBg}>
-                  <div className={`${styles.tableBarFill} ${styles.blue}`} style={{ width: `${(g.nota / 20) * 100}%` }} />
-                </div>
-                <div className={styles.tableBarValue}>{g.nota.toFixed(1)}</div>
-              </div>
-            </td>
-            <td>
-              <div className={styles.tableBarWrapper}>
-                <div className={styles.tableBarBg}>
-                  <div className={`${styles.tableBarFill} ${styles.green}`} style={{ width: `${g.cumplimiento}%` }} />
-                </div>
-                <div className={styles.tableBarValue}>{g.cumplimiento}%</div>
-              </div>
-            </td>
-            <td>{g.n}</td>
-          </tr>
-        )}
-      />
-      {!isPrinting && totalPages > 1 && (
+      
+      {/* Tabla visible en pantalla (paginada) */}
+      <div className="no-print">
+        <DataTable
+          columns={COLUMNS}
+          rows={paginatedRows}
+          sort={sort}
+          onSort={onSort}
+          emptyMessage="No se encontraron resultados para los filtros seleccionados."
+          renderRow={renderRow}
+        />
+      </div>
+
+      {/* Tabla invisible (fantasma) para impresión (completa) */}
+      <div className="only-print" aria-hidden="true">
+        <DataTable
+          columns={COLUMNS}
+          rows={allFilteredRows}
+          sort={sort}
+          onSort={onSort}
+          emptyMessage="No se encontraron resultados para los filtros seleccionados."
+          renderRow={renderRow}
+        />
+      </div>
+      {totalPages > 1 && (
         <div className={`no-print ${styles.paginationContainer}`}>
           <span className={styles.pageInfo}>
             Mostrando {(currentPage - 1) * itemsPerPage + 1} a {Math.min(currentPage * itemsPerPage, allFilteredRows.length)} de {allFilteredRows.length} docentes
