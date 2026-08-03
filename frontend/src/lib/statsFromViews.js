@@ -20,7 +20,9 @@ function sortByPreguntaCodigo([a], [b]) {
 export function computeCriteriaAveragesFromView(criteriosRows, rows) {
   const keys = keysFromRows(rows);
   const byPregunta = new Map();
-  criteriosRows.forEach((c) => {
+  // Defensa extra: si el fetch falló y algo dejó pasar una forma inesperada
+  // (no un array), se trata como "sin datos" en vez de reventar el render.
+  (Array.isArray(criteriosRows) ? criteriosRows : []).forEach((c) => {
     if (!keys.has(matchKey(c.docente_id, c.asignatura_id, c.ciclo, c.seccion))) return;
     if (!byPregunta.has(c.pregunta_codigo)) {
       byPregunta.set(c.pregunta_codigo, { label: c.etiqueta_corta, sum: 0, n: 0 });
@@ -41,7 +43,7 @@ export function computeCriteriaAveragesFromView(criteriosRows, rows) {
 export function computeDirectiveBreakdownFromView(directivasRows, rows) {
   const keys = keysFromRows(rows);
   const byPregunta = new Map();
-  directivasRows.forEach((d) => {
+  (Array.isArray(directivasRows) ? directivasRows : []).forEach((d) => {
     if (!keys.has(matchKey(d.docente_id, d.asignatura_id, d.ciclo, d.seccion))) return;
     if (!byPregunta.has(d.pregunta_codigo)) {
       byPregunta.set(d.pregunta_codigo, { label: d.etiqueta_corta, si: 0, no: 0, av: 0, total: 0 });

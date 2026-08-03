@@ -81,6 +81,7 @@ export default function CursoView({ onOpenCriteriaInfo, onOpenDocente }) {
         curso: sel.curso,
         rows: detailedResponseRowsCurso,
         rawRows: rawResponseRowsCurso,
+        docentesTableGroups,
         criteriaLabels,
         directiveLabels,
         shortCriteriaLabels,

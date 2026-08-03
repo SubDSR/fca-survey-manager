@@ -35,7 +35,7 @@ import appStyles from '../../App.module.css';
    inline no-important. */
 
 export default function DocenteView({
-  onOpenCriteriaInfo, onOpenCurso,
+  onOpenCriteriaInfo, onOpenCurso, onIrAGestion,
   sel, cursoLabel, setSel, reset, options, docenteRows, cursoRows, programaRows,
   onToggleCiclo, onClearCiclo,
 }) {
@@ -118,6 +118,7 @@ export default function DocenteView({
         rows: detailedCursoRows,
         rawRows: rawResponseRows,
         allDocenteRows: detailedDocenteRows,
+        coursesTableGroups,
         criteriaLabels,
         directiveLabels,
         shortCriteriaLabels,
@@ -141,7 +142,15 @@ export default function DocenteView({
       />
 
       <div className={`content-shell ${appStyles.shell}`}>
-        <DocenteHeader selected={sel.selected} cursoRows={cursoRows} programaRows={programaRows} />
+        <DocenteHeader 
+          selected={sel.selected} 
+          cursoRows={cursoRows} 
+          programaRows={programaRows} 
+          onMoreInfo={() => {
+            const first = cursoRows[0] || docenteRows[0];
+            if (first) onIrAGestion(first.docenteId);
+          }}
+        />
 
         <PrintStatBox cursoRows={detailedCursoRows} programaAvgs={programaAvgs} criteriaLabels={criteriaLabels} />
 

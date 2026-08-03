@@ -12,6 +12,23 @@
    hojas, estilos, colores, formatos numéricos, generación del workbook y la
    descarga vía Blob + <a download>) se mantiene EXACTAMENTE igual. */
 
+// TODO: si en algún momento se agrega numero_documento (DNI) a alguna hoja
+// exportada aquí, forzar el formato de celda como texto explícitamente
+// (cell.numFmt = '@' en exceljs) — hay DNIs peruanos reales que empiezan
+// en 0, y la columna en BD es TEXT justo por eso. Sin este formato,
+// Excel autodetecta la celda como número y recorta los ceros a la
+// izquierda. No aplica todavía: ningún export actual incluye este campo.
+//
+// TODO: se encontraron 65 docentes (2026-08-03) con numero_documento ya
+// truncado en la BD (7 dígitos en vez de 8) — confirmado que el 0
+// inicial ya se había perdido en staging.stg_docente_roster (num_doc
+// llegó con sufijo ".0", señal inequívoca de que algún punto de esa
+// carga leyó la columna como número, no como texto). Si en el futuro se
+// agrega un proceso que importe/actualice DNIs de docentes (un roster
+// nuevo, similar al ETL de encuestas), la columna debe tratarse como
+// texto desde el primer punto de lectura del archivo fuente (p. ej. en
+// csv-parse/xlsx, forzar el tipo string de esa columna) — nunca dejar
+// que se infiera como número en ningún paso intermedio.
 import ExcelJS from 'exceljs';
 import { Chart } from 'chart.js';
 import '../components/charts/registerCharts.js';
@@ -21,7 +38,7 @@ import {
   computeDirectiveBreakdown,
   computeDescriptiveStats,
 } from './stats.js';
-import { buildGroups, uniqueSorted } from './groups.js';
+import { buildGroups, uniqueSorted, aggregateByDocente } from './groups.js';
 
 const XLS_COLORS = {
   brand: 'FF9C1F06',
@@ -171,6 +188,7 @@ export async function exportToExcel({
   criteriaLabels,
   directiveLabels,
   shortCriteriaLabels,
+  coursesTableGroups,
 }) {
   const rowsDocenteCurso = rows;
   const rawRowsDocenteCurso = rawRows || rows;
@@ -332,7 +350,7 @@ export async function exportToExcel({
 
   /* ============ HOJA 2: CURSOS DICTADOS ============ */
   const wsC = workbook.addWorksheet('Cursos Dictados', { properties: { tabColor: { argb: XLS_COLORS.brand } } });
-  const courseGroups = buildGroups(allDocenteRows).sort((a, b) =>
+  const courseGroups = (coursesTableGroups || buildGroups(allDocenteRows)).sort((a, b) =>
     String(b.ciclo).localeCompare(String(a.ciclo), 'es') || a.curso.localeCompare(b.curso, 'es'));
 
   wsC.columns = [
@@ -351,7 +369,7 @@ export async function exportToExcel({
   });
   wsC.getRow(1).height = 20;
   courseGroups.forEach(g => {
-    const row = wsC.addRow({ curso: g.curso, ciclo: g.ciclo, seccion: g.seccion, aula: g.aula, nota: g.nota, cumplimiento: g.cumplimiento / 100, n: g.n });
+    const row = wsC.addRow({ curso: g.curso, ciclo: g.ciclo, seccion: g.seccion, aula: g.aula, nota: g.nota, cumplimiento: g.cumplimiento / 100, n: g.nValidas ?? g.n });
     row.getCell('nota').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: scoreFillArgb(g.nota) } };
     row.getCell('nota').font = { bold: true, color: { argb: scoreFontArgb(g.nota) } };
     row.getCell('nota').numFmt = '0.0';
@@ -605,10 +623,9 @@ export async function exportDirectorToExcel({
 
   /* ============ HOJA 2: DETALLE POR DOCENTE/CURSO ============ */
   const wsD = workbook.addWorksheet('Detalle', { properties: { tabColor: { argb: XLS_COLORS.brand } } });
-  const detCols = ['Docente', 'Programa', 'Ciclo', 'Sección', 'Aula', 'Curso', 'Nota Dim I', '% Cumpl. (Sí)', 'N° Encuestas'];
+  const detCols = ['Docente', 'Programa', 'Cursos', 'Nota Dim I', '% Cumpl. (Sí)', 'N° Encuestas'];
   wsD.columns = [
-    { width: 34 }, { width: 22 }, { width: 8 }, { width: 9 }, { width: 8 },
-    { width: 40 }, { width: 11 }, { width: 13 }, { width: 12 },
+    { width: 34 }, { width: 25 }, { width: 50 }, { width: 12 }, { width: 14 }, { width: 13 },
   ];
   detCols.forEach((h, i) => {
     const c = wsD.getCell(1, i + 1);
@@ -619,30 +636,40 @@ export async function exportDirectorToExcel({
     c.border = thinBorder();
   });
   let dr = 2;
-  groups.forEach((g) => {
+  const aggregatedGroups = aggregateByDocente(groups).sort((a, b) => b.nota - a.nota);
+  aggregatedGroups.forEach((g) => {
     wsD.getCell(dr, 1).value = g.docente;
     wsD.getCell(dr, 2).value = g.programa;
-    wsD.getCell(dr, 3).value = g.ciclo;
-    wsD.getCell(dr, 4).value = g.seccion;
-    wsD.getCell(dr, 5).value = g.aula;
-    wsD.getCell(dr, 6).value = g.curso;
-    const notaCell = wsD.getCell(dr, 7);
+    const cursoCell = wsD.getCell(dr, 3);
+    cursoCell.value = g.curso;
+    
+    // Configurar alineación para que el texto salte de línea si hay varios cursos
+    wsD.getCell(dr, 1).alignment = { wrapText: true, vertical: 'top' };
+    wsD.getCell(dr, 2).alignment = { wrapText: true, vertical: 'top' };
+    cursoCell.alignment = { wrapText: true, vertical: 'top' };
+    
+    const notaCell = wsD.getCell(dr, 4);
     notaCell.value = g.nota;
     notaCell.numFmt = '0.0';
     notaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: scoreFillArgb(g.nota) } };
     notaCell.font = { bold: true, color: { argb: scoreFontArgb(g.nota) } };
-    const pctCell = wsD.getCell(dr, 8);
+    
+    const pctCell = wsD.getCell(dr, 5);
     pctCell.value = g.cumplimiento / 100;
     pctCell.numFmt = '0%';
     pctCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: pctFillArgb(g.cumplimiento) } };
-    wsD.getCell(dr, 9).value = g.n;
-    for (let c = 1; c <= 9; c++) {
+    
+    wsD.getCell(dr, 6).value = g.n;
+    
+    for (let c = 1; c <= 6; c++) {
       wsD.getCell(dr, c).border = thinBorder();
-      if (c >= 3) wsD.getCell(dr, c).alignment = { horizontal: 'center' };
+      if (c >= 4) {
+        wsD.getCell(dr, c).alignment = { horizontal: 'center', vertical: 'top' };
+      }
     }
     dr++;
   });
-  wsD.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 9 } };
+  wsD.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 6 } };
   wsD.views = [{ state: 'frozen', ySplit: 1 }];
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -665,6 +692,7 @@ export async function exportCursoToExcel({
   criteriaLabels,
   directiveLabels,
   shortCriteriaLabels,
+  docentesTableGroups,
 }) {
   if (!rows || rows.length === 0) {
     alert('No hay datos para exportar.');
@@ -823,7 +851,7 @@ export async function exportCursoToExcel({
 
   /* ============ HOJA 2: DOCENTES ============ */
   const wsC = workbook.addWorksheet('Docentes', { properties: { tabColor: { argb: XLS_COLORS.brand } } });
-  const groups = buildGroups(rows).sort((a, b) =>
+  const groups = (docentesTableGroups || buildGroups(rows)).sort((a, b) =>
     a.docente.localeCompare(b.docente, 'es') || String(a.ciclo).localeCompare(String(b.ciclo), 'es'));
 
   wsC.columns = [
@@ -842,7 +870,7 @@ export async function exportCursoToExcel({
   });
   wsC.getRow(1).height = 20;
   groups.forEach(g => {
-    const row = wsC.addRow({ docente: g.docente, ciclo: g.ciclo, seccion: g.seccion, aula: g.aula, nota: g.nota, cumplimiento: g.cumplimiento / 100, n: g.n });
+    const row = wsC.addRow({ docente: g.docente, ciclo: g.ciclo, seccion: g.seccion, aula: g.aula, nota: g.nota, cumplimiento: g.cumplimiento / 100, n: g.nValidas ?? g.n });
     row.getCell('nota').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: scoreFillArgb(g.nota) } };
     row.getCell('nota').font = { bold: true, color: { argb: scoreFontArgb(g.nota) } };
     row.getCell('nota').numFmt = '0.0';

@@ -17,6 +17,11 @@ export function DataProvider({ children }) {
   // DirectivesChecklist filtrando por docenteId+asignaturaId+grupoId (ver lib/statsFromViews.js).
   const [criterios, setCriterios] = useState([]);
   const [directivas, setDirectivas] = useState([]);
+  // Errores de estas dos vistas NO tumban toda la app (a diferencia de
+  // docentes/consolidado, de las que depende todo lo demás): se exponen
+  // para que cada card que las consume muestre su propio aviso contenido.
+  const [criteriosError, setCriteriosError] = useState(null);
+  const [directivasError, setDirectivasError] = useState(null);
 
   // Carga inicial: roster (GET /api/docentes) y consolidado (GET /api/encuestas/
   // consolidado). `groupRows` (un registro por grupo docente+asignatura+ciclo+
@@ -50,16 +55,22 @@ export function DataProvider({ children }) {
     let cancelled = false;
     api.encuestas.criterios()
       .then((data) => { if (!cancelled) setCriterios(data); })
-      .catch((err) => { console.error('No se pudo cargar /api/encuestas/criterios:', err); });
+      .catch((err) => {
+        console.error('No se pudo cargar /api/encuestas/criterios:', err);
+        if (!cancelled) setCriteriosError('No se pudieron cargar los criterios de evaluación.');
+      });
     api.encuestas.directivas()
       .then((data) => { if (!cancelled) setDirectivas(data); })
-      .catch((err) => { console.error('No se pudo cargar /api/encuestas/directivas:', err); });
+      .catch((err) => {
+        console.error('No se pudo cargar /api/encuestas/directivas:', err);
+        if (!cancelled) setDirectivasError('No se pudieron cargar las directivas académicas.');
+      });
     return () => { cancelled = true; };
   }, []);
 
   return (
     <DataContext.Provider value={{
-      groupRows, roster, criterios, directivas, status, error,
+      groupRows, roster, criterios, directivas, status, error, criteriosError, directivasError,
       criteriaLabels: CRITERIA_LABELS, directiveLabels: DIRECTIVE_LABELS, shortCriteriaLabels: SHORT_CRITERIA_LABELS,
     }}>
       {children}
