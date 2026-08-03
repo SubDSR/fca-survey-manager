@@ -137,9 +137,9 @@ export default function App() {
           />
         )}
         {status === 'ready' && view === 'gestion' && (
-          <GestionView 
-            initialDocenteId={pendingGestionId} 
-            activeDocenteIds={activeDocenteIds} 
+          <GestionView
+            initialDocenteId={pendingGestionId}
+            activeDocenteIds={activeDocenteIds}
           />
         )}
         {status === 'ready' && view === 'config' && (
