@@ -145,6 +145,9 @@ export default function App() {
         {status === 'ready' && view === 'config' && (
           <ConfigView />
         )}
+        {status === 'ready' && view === 'config' && (
+          <ConfigView />
+        )}
         {status === 'error' && <p>{error}</p>}
         {status !== 'ready' && status !== 'error' && <EmptyState />}
       </AppLayout>
