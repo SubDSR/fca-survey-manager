@@ -9,6 +9,7 @@ import DirectorView from './components/director/DirectorView.jsx';
 import DocenteView from './components/docente/DocenteView.jsx';
 import CursoView from './components/curso/CursoView.jsx';
 import GestionView from './components/gestion/GestionView.jsx';
+import ConfigView from './components/config/ConfigView.jsx';
 import SeguimientoModal from './components/modals/SeguimientoModal.jsx';
 import CriteriaInfoModal from './components/modals/CriteriaInfoModal.jsx';
 import CursoDetailModal from './components/modals/CursoDetailModal.jsx';
@@ -133,6 +134,9 @@ export default function App() {
         )}
         {status === 'ready' && view === 'gestion' && (
           <GestionView initialSearch={pendingGestionSearch} />
+        )}
+        {status === 'ready' && view === 'config' && (
+          <ConfigView />
         )}
         {status === 'error' && <p>{error}</p>}
         {status !== 'ready' && status !== 'error' && <EmptyState />}
