@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, ToggleLeft, ToggleRight, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import Modal from '../../common/Modal.jsx';
 import EntityCard from '../shared/EntityCard.jsx';
@@ -105,95 +106,162 @@ export default function CursosTab() {
     setConfirmTarget(null);
   };
 
+  const navigate = useNavigate();
+
   return (
     <div>
-      <CatalogHeader
-        title="Catálogo de Cursos"
-        subtitle="Administra los cursos (asignaturas) de cada programa."
-        tooltip="Administra el catálogo completo de cursos, incluyendo activos y suspendidos."
-      />
-
-      <div className={styles.toolbar}>
-        <div className={styles.searchBox}>
-          <Search size={16} className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre del curso…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={styles.searchInput}
-          />
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-stack-lg mt-4">
+        <div>
+          <h1 className="font-display-lg text-display-lg text-on-surface mb-2 flex items-center gap-3">
+             Gestión Académica
+             <span className="material-symbols-outlined text-primary opacity-70 text-[24px] cursor-help" title="Administra los cursos y programas de estudio">info</span>
+          </h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Administra el catálogo completo de cursos y programas académicos.</p>
         </div>
-        <select
-          className={styles.filterSelect}
-          value={extraFilters.programa_id || ''}
-          onChange={(e) => cambiarProgramaFilter(e.target.value)}
-        >
-          <option value="">Todos los programas</option>
-          {programas.map((p) => (
-            <option key={p.id} value={p.id}>{p.nombre_corto}</option>
-          ))}
-        </select>
-        <select
-          className={styles.filterSelect}
-          value={activoFilter}
-          onChange={(e) => setActivoFilter(e.target.value)}
-        >
-          <option value="todos">Todos los estados</option>
-          <option value="activos">Activos</option>
-          <option value="suspendidos">Suspendidos</option>
-        </select>
-        <button type="button" className={styles.btnAdd} onClick={abrirCrear}>
-          <Plus size={16} strokeWidth={2.5} />
+        <button onClick={abrirCrear} className="bg-primary text-white px-6 py-3 rounded-lg font-label-md flex items-center gap-2 hover:bg-primary-container transition-colors shadow-md group">
+          <span className="material-symbols-outlined group-hover:rotate-90 transition-transform">add</span>
           Agregar curso
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-outline-variant/30 mb-6">
+        <button className="pb-3 font-headline-sm font-semibold text-primary border-b-2 border-primary">
+           Cursos
+        </button>
+        <button onClick={() => navigate('../programas')} className="pb-3 font-headline-sm font-medium text-on-surface-variant hover:text-primary transition-colors">
+           Programas
+        </button>
+      </div>
+
+      {/* Filters & Search Bar */}
+      <div className="glass-card rounded-xl p-4 mb-stack-lg flex flex-col lg:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full lg:w-1/3">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
+          <input
+            className="glass-input w-full pl-10 pr-4 py-2.5 rounded-lg text-sm text-on-surface focus:outline-none placeholder:text-on-surface-variant/70"
+            placeholder="Buscar por nombre del curso..."
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
+          <select
+            className="glass-input px-4 py-2 rounded-full text-sm font-medium text-on-surface focus:outline-none"
+            value={activoFilter}
+            onChange={(e) => setActivoFilter(e.target.value)}
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="activos">Activos</option>
+            <option value="suspendidos">Suspendidos</option>
+          </select>
+          <select
+            className="glass-input px-4 py-2 rounded-full text-sm font-medium text-on-surface focus:outline-none"
+            value={extraFilters.programa_id || ''}
+            onChange={(e) => cambiarProgramaFilter(e.target.value)}
+          >
+            <option value="">Todos los programas</option>
+            {programas.map((p) => (
+              <option key={p.id} value={p.id}>{p.nombre_corto}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {actionError && (
-        <div className={styles.actionErrorBox}>
-          <AlertCircle size={16} />
-          <span>{actionError}</span>
+        <div className="bg-error-container/20 border border-error/50 rounded-xl p-4 flex gap-3 text-error mb-4 items-center">
+          <AlertCircle size={18} />
+          <span className="font-medium text-sm">{actionError}</span>
         </div>
       )}
 
       {loading && (
-        <div className={styles.emptyState}><Loader2 size={18} className={styles.spin} /> Cargando cursos…</div>
+        <div className="flex justify-center items-center py-12 text-primary">
+          <Loader2 size={32} className={styles.spin} />
+        </div>
       )}
-      {!loading && error && <div className={styles.emptyState}>{error}</div>}
+      {!loading && error && <div className="text-error text-center py-12">{error}</div>}
       {!loading && !error && items.length === 0 && (
-        <div className={styles.emptyState}>No se encontraron cursos para este filtro.</div>
+        <div className="text-center py-12 text-on-surface-variant">No se encontraron cursos para este filtro.</div>
       )}
 
       {!loading && !error && items.length > 0 && (
         <>
-        <div className={styles.grid}>
-          {pageItems.map((c) => (
-            <EntityCard
-              key={c.id}
-              icon={BookOpen}
-              title={c.nombre}
-              subtitle={c.programa || 'Sin programa'}
-              statusLabel={c.ciclo ? `Ciclo ${c.ciclo}` : null}
-              statusColor="#2F6FB0"
-              active={c.activo}
-              onEdit={() => abrirEditar(c)}
-              onView={() => setViewTarget(c)}
-              onToggleActive={() => setConfirmTarget(c)}
-              toggleActiveLabel={c.activo ? 'Suspender' : 'Reactivar'}
-              ToggleIcon={c.activo ? ToggleLeft : ToggleRight}
-              onShowHistory={() => setHistoryTarget(c)}
-            />
-          ))}
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter mb-stack-lg">
+            {pageItems.map((c) => (
+              <div key={c.id} className={`glass-card rounded-xl overflow-hidden hover:translate-y-[-4px] transition-all duration-300 group flex flex-col ${!c.activo ? 'border-error-container opacity-75' : ''}`}>
+                <div className="p-5 flex-1">
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="material-symbols-outlined text-primary text-[28px] p-2 bg-primary-container/10 rounded-lg group-hover:scale-110 transition-transform">
+                      book_4
+                    </span>
+                    <button onClick={() => setHistoryTarget(c)} className="text-on-surface-variant hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">history</span>
+                    </button>
+                  </div>
+                  <h3 className={`font-headline-sm text-on-surface font-semibold mb-2 line-clamp-2 ${!c.activo ? 'line-through text-on-surface-variant' : 'group-hover:text-primary transition-colors'}`}>
+                    {c.nombre}
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-medium bg-surface-container-high text-on-surface-variant">
+                      {c.programa || 'Sin Programa'}
+                    </span>
+                    {c.ciclo && (
+                      <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-medium bg-tertiary-container/10 text-tertiary border border-tertiary/20">
+                        Ciclo {c.ciclo}
+                      </span>
+                    )}
+                    {c.creditos && (
+                      <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-medium bg-surface-container-high text-on-surface-variant">
+                        {c.creditos} CR
+                      </span>
+                    )}
+                    {!c.activo && (
+                      <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-medium bg-error-container/20 text-error border border-error/20">
+                        Suspendido
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-surface-container-lowest border-t border-outline-variant/20 p-3 flex justify-between gap-2">
+                   <button onClick={() => abrirEditar(c)} className="flex-1 flex justify-center items-center gap-1.5 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-[16px]">edit</span>
+                      Editar
+                   </button>
+                   <button onClick={() => setViewTarget(c)} className="flex-1 flex justify-center items-center gap-1.5 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-[16px]">visibility</span>
+                      Ver
+                   </button>
+                   <button 
+                     onClick={() => setConfirmTarget(c)}
+                     className={`flex-1 flex justify-center items-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        c.activo 
+                          ? 'text-error hover:bg-error-container/20' 
+                          : 'text-primary hover:bg-primary-container/20'
+                      }`}
+                   >
+                      <span className="material-symbols-outlined text-[16px]">
+                        {c.activo ? 'block' : 'check_circle'}
+                      </span>
+                      {c.activo ? 'Suspender' : 'Reactivar'}
+                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
 
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          setPage={setPage}
-          totalItems={items.length}
-          pageSize={PAGE_SIZE}
-          itemLabel="cursos"
-        />
+          <div className="border-t border-outline-variant/20 pt-6">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              setPage={setPage}
+              totalItems={items.length}
+              pageSize={PAGE_SIZE}
+              itemLabel="cursos"
+            />
+          </div>
         </>
       )}
 

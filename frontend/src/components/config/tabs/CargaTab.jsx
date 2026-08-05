@@ -298,54 +298,60 @@ export default function CargaTab() {
 
   return (
     <>
-      <div className={layoutStyles.pageHeader}>
-        <span className={layoutStyles.eyebrow}>Panel académico</span>
-        <h1 className={layoutStyles.pageTitle}>Carga de Información</h1>
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-stack-lg mt-4">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface mb-2 flex items-center gap-3">
+             Carga de Información
+             <span className="material-symbols-outlined text-primary opacity-70 text-[24px] cursor-help" title="Administra la carga de encuestas">info</span>
+          </h1>
+          <p className="text-base text-on-surface-variant max-w-2xl">Selecciona un período y registra los datos de encuestas físicas y virtuales.</p>
+        </div>
       </div>
 
       {periodsError && (
-        <div className={styles.errorBox} style={{ marginBottom: 20 }}>
-          <AlertCircle size={20} className={styles.errorIcon} />
-          <div className={styles.errorBody}>
-            <p className={styles.errorTitle}>Ocurrió un problema</p>
-            <p className={styles.errorText}>{periodsError}</p>
+        <div className="bg-error-container/20 border border-error/50 rounded-xl p-4 flex gap-3 text-error mb-4 items-center">
+          <AlertCircle size={20} className="shrink-0" />
+          <div>
+            <p className="font-medium text-sm">Ocurrió un problema</p>
+            <p className="text-sm opacity-80">{periodsError}</p>
           </div>
         </div>
       )}
 
-      <div className={layoutStyles.grid}>
-        <div className={layoutStyles.leftCol}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <div className="lg:col-span-2 space-y-8">
           {/* BLOQUE 1: Selección de período */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
+          <div className="glass-card rounded-xl p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
-                <h2 className={styles.cardTitle}>1. Selecciona el período académico</h2>
-                <p className={styles.cardSubtitle}>Todas las cargas y encuestas se almacenarán dentro del período seleccionado.</p>
+                <h2 className="text-xl text-on-surface font-semibold mb-1">1. Selecciona el período académico</h2>
+                <p className="text-sm text-on-surface-variant">Todas las cargas y encuestas se almacenarán dentro del período seleccionado.</p>
               </div>
-              <button type="button" className={layoutStyles.pillBtnOutline} onClick={toggleNewPeriodForm}>
-                <Plus size={15} strokeWidth={2.5} />
+              <button type="button" className="text-primary font-medium text-sm border border-primary/30 hover:bg-primary-container/20 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors shrink-0" onClick={toggleNewPeriodForm}>
+                <Plus size={16} strokeWidth={2.5} />
                 Nuevo período
               </button>
             </div>
 
             {showNewPeriodForm && (
-              <div className={styles.newPeriodForm}>
-                <div className={styles.formField} style={{ flex: '0 0 120px', minWidth: 100 }}>
-                  <label className={styles.formLabel} htmlFor="newPeriodAnio">Año</label>
+              <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-4 mb-6 flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider" htmlFor="newPeriodAnio">Año</label>
                   <input
                     id="newPeriodAnio"
                     type="number"
-                    className={styles.formInput}
+                    className="glass-input w-full px-3 py-2 rounded-lg text-sm text-on-surface focus:outline-none"
                     value={newPeriodAnio}
                     onChange={(e) => { setNewPeriodAnio(e.target.value); setNewPeriodError(''); }}
                     placeholder="2026"
                   />
                 </div>
-                <div className={styles.formField} style={{ flex: '0 0 100px', minWidth: 90 }}>
-                  <label className={styles.formLabel} htmlFor="newPeriodSemestre">Semestre</label>
+                <div className="flex-1 min-w-[100px]">
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider" htmlFor="newPeriodSemestre">Semestre</label>
                   <select
                     id="newPeriodSemestre"
-                    className={styles.formInput}
+                    className="glass-input w-full px-3 py-2 rounded-lg text-sm text-on-surface focus:outline-none"
                     value={newPeriodSemestre}
                     onChange={(e) => setNewPeriodSemestre(e.target.value)}
                   >
@@ -354,28 +360,31 @@ export default function CargaTab() {
                     ))}
                   </select>
                 </div>
-                <div className={styles.formField} style={{ flex: '0 0 auto', minWidth: 'auto' }}>
-                  <label className={styles.formLabel} htmlFor="newPeriodActivar">&nbsp;</label>
-                  <label className={styles.checkboxLabel} htmlFor="newPeriodActivar">
-                    <input
-                      id="newPeriodActivar"
-                      type="checkbox"
-                      checked={newPeriodActivar}
-                      onChange={(e) => setNewPeriodActivar(e.target.checked)}
-                    />
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    id="newPeriodActivar"
+                    type="checkbox"
+                    checked={newPeriodActivar}
+                    onChange={(e) => setNewPeriodActivar(e.target.checked)}
+                    className="w-4 h-4 text-primary rounded border-outline-variant focus:ring-primary"
+                  />
+                  <label className="text-sm text-on-surface-variant cursor-pointer" htmlFor="newPeriodActivar">
                     Activar al crear
                   </label>
                 </div>
-                {newPeriodError && <div className={styles.formError} style={{ flexBasis: '100%' }}>{newPeriodError}</div>}
-                <button type="button" className={styles.createBtn} onClick={createPeriod} disabled={creatingPeriod}>
-                  {creatingPeriod ? <Loader2 size={16} className={styles.spin} /> : 'Crear'}
-                </button>
-                <button type="button" className={styles.btnSecondary} onClick={toggleNewPeriodForm}>Cancelar</button>
+                {newPeriodError && <div className="w-full text-error text-sm font-medium">{newPeriodError}</div>}
+                <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                  <button type="button" className="flex-1 sm:flex-none bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-container transition-colors disabled:opacity-50 flex justify-center items-center" onClick={createPeriod} disabled={creatingPeriod}>
+                    {creatingPeriod ? <Loader2 size={16} className={styles.spin} /> : 'Crear'}
+                  </button>
+                  <button type="button" className="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors" onClick={toggleNewPeriodForm}>Cancelar</button>
+                </div>
               </div>
             )}
 
-            <div className={layoutStyles.periodSelectorRow}>
+            <div className="flex items-center gap-4">
               <select
+                className="glass-input px-4 py-2 rounded-lg text-lg font-semibold text-on-surface focus:outline-none min-w-[200px]"
                 value={selectedPeriodId || ''}
                 onChange={(e) => setSelectedPeriodId(Number(e.target.value))}
               >
@@ -384,8 +393,8 @@ export default function CargaTab() {
                 ))}
               </select>
               {selectedPeriod && selectedPeriod.estado === 'EN_CURSO' && (
-                <span className={`${styles.badge} ${styles.badgeActive}`}>
-                  <span className={styles.badgeDot} />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary-container/20 text-primary border border-primary/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   En curso
                 </span>
               )}
@@ -393,157 +402,168 @@ export default function CargaTab() {
           </div>
 
           {/* BLOQUE 2: ¿Qué deseas hacer? */}
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>2. ¿Qué deseas hacer?</h2>
-            <p className={styles.cardSubtitle}>Elige cómo quieres registrar la información de encuestas.</p>
+          <div className="glass-card rounded-xl p-6">
+            <h2 className="text-xl text-on-surface font-semibold mb-1">2. ¿Qué deseas hacer?</h2>
+            <p className="text-sm text-on-surface-variant mb-6">Elige cómo quieres registrar la información de encuestas.</p>
 
-            <div className={layoutStyles.actionCards}>
-              <div className={`${layoutStyles.actionCard} ${layoutStyles.actionCardCsv}`}>
-                <UploadCloud size={28} strokeWidth={1.6} className={layoutStyles.actionCardIcon} />
-                <h3 className={layoutStyles.actionCardTitle}>Subir archivo CSV</h3>
-                <p className={layoutStyles.actionCardText}>Importa encuestas desde archivos CSV. El sistema validará el formato según el tipo de encuesta seleccionado.</p>
-                <button type="button" className={`${layoutStyles.actionCardBtn} ${layoutStyles.actionCardBtnCsv}`} onClick={irASubirCsv}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-surface-container-lowest border border-primary/40 rounded-xl p-5 flex flex-col items-center text-center hover:border-primary transition-colors shadow-sm">
+                <UploadCloud size={32} className="text-primary mb-3" strokeWidth={1.5} />
+                <h3 className="font-medium text-on-surface mb-2">Subir archivo CSV</h3>
+                <p className="text-xs text-on-surface-variant mb-4 flex-1">Importa encuestas físicas desde archivos CSV.</p>
+                <button type="button" className="w-full py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-container transition-colors" onClick={irASubirCsv}>
                   Subir CSV
                 </button>
               </div>
-              <div className={`${layoutStyles.actionCard} ${layoutStyles.actionCardFisica}`}>
-                <span className={layoutStyles.comingSoonBadge}>Próximamente</span>
-                <FileCheck2 size={28} strokeWidth={1.6} className={layoutStyles.actionCardIcon} />
-                <h3 className={layoutStyles.actionCardTitle}>Registrar encuesta física</h3>
-                <p className={layoutStyles.actionCardText}>Registra una encuesta física directamente en el sistema completando el formulario.</p>
-                <button type="button" className={`${layoutStyles.actionCardBtn} ${layoutStyles.actionCardBtnFisica}`} disabled>
+              <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 flex flex-col items-center text-center relative opacity-60">
+                <span className="absolute top-2 right-2 bg-tertiary-container/20 text-tertiary text-[10px] font-bold px-2 py-0.5 rounded uppercase">Próximamente</span>
+                <FileCheck2 size={32} className="text-on-surface-variant mb-3" strokeWidth={1.5} />
+                <h3 className="font-medium text-on-surface mb-2">Encuesta física</h3>
+                <p className="text-xs text-on-surface-variant mb-4 flex-1">Registra una encuesta física completando el formulario.</p>
+                <button type="button" className="w-full py-2 bg-surface-container text-on-surface-variant rounded-lg text-sm font-medium cursor-not-allowed" disabled>
                   Nueva encuesta
                 </button>
               </div>
-              <div className={`${layoutStyles.actionCard} ${layoutStyles.actionCardVirtual}`}>
-                <Monitor size={28} strokeWidth={1.6} className={layoutStyles.actionCardIcon} />
-                <h3 className={layoutStyles.actionCardTitle}>Subir encuestas virtuales</h3>
-                <p className={layoutStyles.actionCardText}>Importa resultados de encuestas virtuales realizadas en plataformas externas.</p>
-                <button type="button" className={`${layoutStyles.actionCardBtn} ${layoutStyles.actionCardBtnVirtual}`} onClick={irASubirVirtual}>
-                  Subir encuestas virtuales
+              <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 flex flex-col items-center text-center hover:border-secondary transition-colors">
+                <Monitor size={32} className="text-[#4b4b4b] mb-3" strokeWidth={1.5} />
+                <h3 className="font-medium text-on-surface mb-2">Encuestas virtuales</h3>
+                <p className="text-xs text-on-surface-variant mb-4 flex-1">Importa resultados de encuestas virtuales externas.</p>
+                <button type="button" className="w-full py-2 bg-[#4b4b4b] text-white rounded-lg text-sm font-medium hover:bg-[#333333] transition-colors" onClick={irASubirVirtual}>
+                  Subir encuestas
                 </button>
               </div>
             </div>
           </div>
 
           {/* BLOQUE 3: Información y formatos de CSV */}
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>3. Información y formatos de CSV</h2>
-            <p className={styles.cardSubtitle}>Descarga la plantilla correspondiente antes de subir tus archivos.</p>
+          <div className="glass-card rounded-xl p-6">
+            <h2 className="text-xl text-on-surface font-semibold mb-1">3. Información y formatos de CSV</h2>
+            <p className="text-sm text-on-surface-variant mb-6">Descarga la plantilla correspondiente antes de subir tus archivos.</p>
 
-            <div className={layoutStyles.templateCards}>
-              <div className={layoutStyles.templateCard}>
-                <div className={layoutStyles.templateCardTitle}>Encuestas físicas (CSV)</div>
-                <p className={layoutStyles.templateCardText}>Formato usado para registrar encuestas físicas importadas por archivo.</p>
-                <div className={layoutStyles.templateCardLabel}>Formato requerido:</div>
-                <div className={layoutStyles.templateCardLinkRow}>
-                  <FileSpreadsheet size={18} strokeWidth={1.6} color="#1e6b39" />
-                  <button type="button" className={layoutStyles.templateCardLink} onClick={descargarPlantillaFisica}>
-                    Descargar plantilla física (CSV)
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 flex gap-4 items-start">
+                <div className="bg-primary/10 p-2 rounded-lg text-primary shrink-0">
+                  <FileSpreadsheet size={24} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <div className="font-medium text-on-surface mb-1">Encuestas físicas</div>
+                  <p className="text-xs text-on-surface-variant mb-3">Formato usado para registrar encuestas físicas importadas por archivo.</p>
+                  <button type="button" className="text-primary text-sm font-medium hover:underline text-left" onClick={descargarPlantillaFisica}>
+                    Descargar plantilla (CSV)
                   </button>
                 </div>
-                <div className={layoutStyles.templateCardCaption}>Ejemplo: fisicas_ejemplo.csv</div>
               </div>
 
-              <div className={layoutStyles.templateCard}>
-                <div className={layoutStyles.templateCardTitle}>Encuestas virtuales (CSV)</div>
-                <p className={layoutStyles.templateCardText}>Formato usado para registrar resultados de encuestas virtuales.</p>
-                <div className={layoutStyles.templateCardLabel}>Formato requerido:</div>
-                <div className={layoutStyles.templateCardLinkRow}>
-                  <FileSpreadsheet size={18} strokeWidth={1.6} color="#2f6fb0" />
-                  <button type="button" className={layoutStyles.templateCardLink} onClick={descargarPlantillaVirtual}>
-                    Descargar plantilla virtual (CSV)
+              <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 flex gap-4 items-start">
+                <div className="bg-[#2f6fb0]/10 p-2 rounded-lg text-[#2f6fb0] shrink-0">
+                  <FileSpreadsheet size={24} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <div className="font-medium text-on-surface mb-1">Encuestas virtuales</div>
+                  <p className="text-xs text-on-surface-variant mb-3">Formato usado para registrar resultados de encuestas virtuales.</p>
+                  <button type="button" className="text-[#2f6fb0] text-sm font-medium hover:underline text-left" onClick={descargarPlantillaVirtual}>
+                    Descargar plantilla (CSV)
                   </button>
                 </div>
-                <div className={layoutStyles.templateCardCaption}>Ejemplo: virtuales_ejemplo.csv</div>
               </div>
             </div>
 
-            <div className={styles.infoBanner}>
-              <Info size={18} className={styles.infoIcon} />
-              <p className={styles.infoText}>
-                Importante: Asegúrate de usar la plantilla correcta según el tipo de encuesta para evitar errores en la carga.
-                Columnas esperadas (física): {EXPECTED_HEADERS.join(', ')}.
-                Columnas esperadas (virtual): {EXPECTED_HEADERS_VIRTUAL.join(', ')}.
+            <div className="bg-tertiary-container/10 border border-tertiary/20 rounded-lg p-4 flex gap-3 text-tertiary text-sm">
+              <Info size={18} className="shrink-0" />
+              <p>
+                Asegúrate de usar la plantilla correcta según el tipo de encuesta para evitar errores en la carga.<br />
+                Columnas esperadas (física): <span className="font-medium opacity-80">{EXPECTED_HEADERS.join(', ')}</span>.<br />
+                Columnas esperadas (virtual): <span className="font-medium opacity-80">{EXPECTED_HEADERS_VIRTUAL.join(', ')}</span>.
               </p>
             </div>
           </div>
         </div>
 
-        <div className={layoutStyles.rightCol}>
+        <div className="space-y-8">
           {/* Estado del período */}
-          <div className={styles.card}>
-            <div className={layoutStyles.stateCardHeader}>
-              <div className={layoutStyles.stateCalendarIcon}><Calendar size={22} /></div>
-              <div className={layoutStyles.stateHeaderLabel}>
-                <span>Estado del período</span>
+          <div className="glass-card rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-primary/10 text-primary p-2 rounded-lg">
+                <Calendar size={20} strokeWidth={1.5} />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">Estado del período</div>
                 {selectedPeriod && (
-                  <span className={`${styles.badge} ${selectedPeriod.estado === 'EN_CURSO' ? styles.badgeActive : styles.badgeInactive}`}>
-                    {selectedPeriod.estado === 'EN_CURSO' && <span className={styles.badgeDot} />}
+                  <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <span className={`w-2 h-2 rounded-full ${selectedPeriod.estado === 'EN_CURSO' ? 'bg-primary' : 'bg-on-surface-variant/40'}`} />
                     {selectedPeriod.estado === 'EN_CURSO' ? 'En curso' : (selectedPeriod.estado === 'CERRADO' ? 'Cerrado' : 'Planificado')}
-                  </span>
+                  </div>
                 )}
               </div>
             </div>
-            <div className={layoutStyles.periodBigCode}>{selectedPeriodLabel || '—'}</div>
-            <div className={layoutStyles.periodDatesCol}>
-              <div>Fecha de inicio: <b>{selectedPeriod ? formatDateOnly(selectedPeriod.fecha_inicio) : '—'}</b></div>
-              <div>Fecha de fin: <b>{selectedPeriod ? formatDateOnly(selectedPeriod.fecha_fin) : '—'}</b></div>
+            
+            <div className="text-3xl font-bold text-on-surface mb-6">{selectedPeriodLabel || '—'}</div>
+            
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center text-sm border-b border-outline-variant/30 pb-2">
+                <span className="text-on-surface-variant">Fecha de inicio</span>
+                <span className="font-semibold text-on-surface">{selectedPeriod ? formatDateOnly(selectedPeriod.fecha_inicio) : '—'}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-outline-variant/30 pb-2">
+                <span className="text-on-surface-variant">Fecha de fin</span>
+                <span className="font-semibold text-on-surface">{selectedPeriod ? formatDateOnly(selectedPeriod.fecha_fin) : '—'}</span>
+              </div>
             </div>
-            <button type="button" className={layoutStyles.linkBtn} onClick={() => setShowAllPeriods((v) => !v)}>
-              {showAllPeriods ? 'Ocultar periodos' : 'Ver todos los periodos →'}
+
+            <button type="button" className="text-primary text-sm font-medium hover:underline flex items-center justify-center w-full gap-1" onClick={() => setShowAllPeriods((v) => !v)}>
+              {showAllPeriods ? 'Ocultar periodos' : 'Ver todos los periodos'} <ChevronDown size={16} className={`transition-transform ${showAllPeriods ? 'rotate-180' : ''}`} />
             </button>
 
             {showAllPeriods && (
-              <div className={layoutStyles.allPeriodsWrap}>
+              <div className="mt-4 pt-4 border-t border-outline-variant/30 space-y-3">
                 {periodsLoading && (
-                  <div className={layoutStyles.periodListRow}><Loader2 size={14} className={styles.spin} /> Cargando períodos…</div>
+                  <div className="text-sm text-primary flex items-center justify-center gap-2 py-4"><Loader2 size={16} className={styles.spin} /> Cargando períodos...</div>
                 )}
                 {!periodsLoading && periods.length === 0 && (
-                  <div className={layoutStyles.periodListRow}>Aún no hay períodos académicos registrados.</div>
+                  <div className="text-sm text-on-surface-variant text-center py-4">Aún no hay períodos académicos registrados.</div>
                 )}
                 {periods.map((p) => {
                   const active = p.estado === 'EN_CURSO';
                   return (
-                    <div key={p.id} className={layoutStyles.periodListRow}>
-                      <div className={layoutStyles.periodListInfo}>
-                        <div className={layoutStyles.periodListNameRow}>
-                          <span className={layoutStyles.periodListName}>{p.codigo}</span>
-                          <span className={`${styles.badge} ${active ? styles.badgeActive : styles.badgeInactive}`}>
-                            {active && <span className={styles.badgeDot} />}
+                    <div key={p.id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-3 flex justify-between items-center group hover:border-primary/30 transition-colors">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm text-on-surface">{p.codigo}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${active ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
                             {active ? 'En curso' : (p.estado === 'CERRADO' ? 'Cerrado' : 'Planificado')}
                           </span>
                         </div>
-                        <div className={layoutStyles.periodListDates}>
+                        <div className="text-xs text-on-surface-variant">
                           {formatDateOnly(p.fecha_inicio)} – {formatDateOnly(p.fecha_fin)}
                         </div>
                       </div>
-                      <div className={layoutStyles.periodListActions}>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {!active && (
                           <button
                             type="button"
-                            className={styles.btnOutline}
+                            className="w-7 h-7 rounded flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
                             onClick={() => activatePeriod(p.id)}
                             disabled={activatingId === p.id}
+                            title="Activar"
                           >
-                            {activatingId === p.id ? <Loader2 size={14} className={styles.spin} /> : 'Activar'}
+                            {activatingId === p.id ? <Loader2 size={14} className={styles.spin} /> : <CheckCircle2 size={14} />}
                           </button>
                         )}
                         <button
                           type="button"
-                          className={layoutStyles.iconBtnSmall}
+                          className="w-7 h-7 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors"
                           title="Editar fechas"
                           onClick={() => abrirEditarPeriodo(p)}
                         >
-                          <Pencil size={13} />
+                          <Pencil size={14} />
                         </button>
                         <button
                           type="button"
-                          className={`${layoutStyles.iconBtnSmall} ${layoutStyles.iconBtnSmallDanger}`}
+                          className="w-7 h-7 rounded flex items-center justify-center text-error hover:bg-error-container/20 transition-colors"
                           title="Eliminar período"
                           onClick={() => { setDeletePeriodTarget(p); setDeletePeriodError(''); }}
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -554,164 +574,165 @@ export default function CargaTab() {
           </div>
 
           {/* Historial de cargas */}
-          <div className={styles.card}>
-            <div className={layoutStyles.historyHeaderRow}>
-              <h3>Historial de cargas</h3>
-              {/* Sin destino funcional: esta lista ya muestra el historial
-                  completo de la campaña (sin truncar ni paginar), así que no
-                  hay una vista "más completa" a la que enlazar todavía. */}
-              <span className={layoutStyles.footerLink} style={{ cursor: 'default', opacity: 0.5 }}>Ver todo</span>
+          <div className="glass-card rounded-xl p-6 flex flex-col h-[500px]">
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="text-xl text-on-surface font-semibold">Historial de cargas</h3>
+              <span className="text-xs text-on-surface-variant/50 cursor-default">Ver todo</span>
             </div>
-            <div className={layoutStyles.historyCaption}>
-              {historyLoading ? <Loader2 size={12} className={styles.spin} /> : historyCountLabel}
+            <div className="text-xs text-on-surface-variant mb-4">
+              {historyLoading ? <Loader2 size={12} className={`${styles.spin} inline-block`} /> : historyCountLabel}
             </div>
 
-            <div className={styles.infoBanner}>
-              <Layers size={18} className={styles.infoIcon} />
-              <p className={styles.infoText}>
-                <b>{totalRowsLabel} registros acumulados</b> en {selectedPeriodLabel}. Las cargas ocultas no se cuentan aquí.
+            <div className="bg-primary-container/10 border border-primary/20 rounded-lg p-3 flex gap-3 text-primary text-sm mb-4 shrink-0">
+              <Layers size={18} className="shrink-0" />
+              <p className="text-xs leading-relaxed">
+                <b className="font-bold">{totalRowsLabel} registros acumulados</b> en {selectedPeriodLabel}. Las cargas ocultas no se cuentan aquí.
               </p>
             </div>
 
-            {uploads.length > 0 ? (
-              <div>
-                {uploads.map((u) => {
-                  const tieneDetalle = u.filas_omitidas > 0 || u.filas_error > 0;
-                  const expanded = expandedId === u.id;
-                  return (
-                    <div key={u.id}>
-                      <div className={layoutStyles.historyListRow} style={!u.visible ? { opacity: 0.6 } : undefined}>
-                        <div className={layoutStyles.historyFileIconBox}><FileText size={15} /></div>
-                        <div className={layoutStyles.historyListInfo}>
-                          <div className={layoutStyles.historyListNameRow}>
-                            <span className={layoutStyles.historyListName} title={u.archivo_nombre}>{u.archivo_nombre}</span>
-                            <span className={`${layoutStyles.historyBadgeModalidad} ${u.modalidad_carga === 'virtual' ? layoutStyles.historyBadgeModalidadVirtual : ''}`}>
-                              {u.modalidad_carga === 'virtual' ? 'Virtual' : 'Física'}
-                            </span>
-                            {!u.visible && <span className={`${styles.badge} ${styles.badgeInactive}`}>Oculta</span>}
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {uploads.length > 0 ? (
+                <div className="space-y-3">
+                  {uploads.map((u) => {
+                    const tieneDetalle = u.filas_omitidas > 0 || u.filas_error > 0;
+                    const expanded = expandedId === u.id;
+                    return (
+                      <div key={u.id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg overflow-hidden">
+                        <div className={`p-3 flex items-start gap-3 ${!u.visible ? 'opacity-60' : ''}`}>
+                          <div className="bg-surface-container p-2 rounded text-on-surface-variant shrink-0 mt-0.5">
+                            <FileText size={16} />
                           </div>
-                          <div className={layoutStyles.historyListMeta}>
-                            {formatDateTime(u.fecha_carga)} · {'+' + u.filas_insertadas.toLocaleString('es-PE')} registros
-                            {u.filas_omitidas > 0 && ` · ${u.filas_omitidas} omitidas`}
-                            {u.filas_error > 0 && ` · ${u.filas_error} error`}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-medium text-sm text-on-surface truncate max-w-[150px]" title={u.archivo_nombre}>{u.archivo_nombre}</span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${u.modalidad_carga === 'virtual' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
+                                {u.modalidad_carga === 'virtual' ? 'Virtual' : 'Física'}
+                              </span>
+                              {!u.visible && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant uppercase font-bold tracking-wider">Oculta</span>}
+                            </div>
+                            <div className="text-[11px] text-on-surface-variant leading-relaxed">
+                              {formatDateTime(u.fecha_carga)}<br/>
+                              <span className="font-medium text-primary">+{u.filas_insertadas.toLocaleString('es-PE')} registros</span>
+                              {u.filas_omitidas > 0 && <span className="text-tertiary"> · {u.filas_omitidas} omitidas</span>}
+                              {u.filas_error > 0 && <span className="text-error"> · {u.filas_error} error</span>}
+                            </div>
                           </div>
-                        </div>
-                        <div className={layoutStyles.historyListActions}>
-                          {tieneDetalle && (
+                          <div className="flex flex-col gap-1 shrink-0">
+                            {tieneDetalle && (
+                              <button
+                                type="button"
+                                className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors"
+                                onClick={() => setExpandedId(expanded ? null : u.id)}
+                                aria-label="Ver detalle"
+                              >
+                                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </button>
+                            )}
                             <button
                               type="button"
-                              className={layoutStyles.iconBtnSmall}
-                              onClick={() => setExpandedId(expanded ? null : u.id)}
-                              aria-label="Ver detalle"
+                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors"
+                              title={u.visible ? 'Ocultar carga' : 'Mostrar carga'}
+                              onClick={() => toggleVisibilidad(u)}
+                              disabled={visibilityPendingId === u.id}
                             >
-                              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              {visibilityPendingId === u.id
+                                ? <Loader2 size={14} className={styles.spin} />
+                                : (u.visible ? <Eye size={14} /> : <EyeOff size={14} />)}
                             </button>
-                          )}
-                          <button
-                            type="button"
-                            className={layoutStyles.iconBtnSmall}
-                            title={u.visible ? 'Ocultar carga' : 'Mostrar carga'}
-                            onClick={() => toggleVisibilidad(u)}
-                            disabled={visibilityPendingId === u.id}
-                          >
-                            {visibilityPendingId === u.id
-                              ? <Loader2 size={14} className={styles.spin} />
-                              : (u.visible ? <Eye size={14} /> : <EyeOff size={14} />)}
-                          </button>
-                          <button
-                            type="button"
-                            className={`${layoutStyles.iconBtnSmall} ${layoutStyles.iconBtnSmallDanger}`}
-                            title="Eliminar carga"
-                            onClick={() => { setDeleteTarget(u); setDeleteError(''); }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                            <button
+                              type="button"
+                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors"
+                              title="Eliminar carga"
+                              onClick={() => { setDeleteTarget(u); setDeleteError(''); }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
+                        {expanded && (
+                          <div className="bg-surface-container-high/30 border-t border-outline-variant/20 p-3 text-xs">
+                            {u.filas_error > 0 && (
+                              <div className="mb-3">
+                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-error-container/30 text-error mb-1">{u.filas_error} error{u.filas_error === 1 ? '' : 'es'}</span>
+                                <ul className="pl-4 list-disc text-error/80 space-y-1">
+                                  {(u.errores || []).map((e, i) => (
+                                    <li key={i}>Fila {e.fila}: {e.mensaje}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {u.filas_omitidas > 0 && (
+                              <div className="mb-3">
+                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-tertiary-container/30 text-tertiary mb-1">{u.filas_omitidas} omitida{u.filas_omitidas === 1 ? '' : 's'}</span>
+                                <ul className="pl-4 list-disc text-on-surface-variant space-y-1">
+                                  {(u.omitidas || []).map((o, i) => (
+                                    <li key={i}>Fila {o.fila}: {o.mensaje}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {u.advertencias && u.advertencias.length > 0 && (
+                              <div>
+                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-tertiary-container/30 text-tertiary mb-1">{u.advertencias.length} advertencia{u.advertencias.length === 1 ? '' : 's'}</span>
+                                <ul className="pl-4 list-disc text-on-surface-variant space-y-1">
+                                  {u.advertencias.map((a, i) => (
+                                    <li key={i}>Fila {a.fila}: {a.mensaje}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {expanded && (
-                        <div className={styles.detailPanel}>
-                          {u.filas_error > 0 && (
-                            <div className={styles.detailGroup}>
-                              <span className={`${styles.detailBadge} ${styles.detailBadgeError}`}>{u.filas_error} error{u.filas_error === 1 ? '' : 'es'}</span>
-                              <ul className={styles.detailList}>
-                                {(u.errores || []).map((e, i) => (
-                                  // eslint-disable-next-line react/no-array-index-key
-                                  <li key={i}>Fila {e.fila}: {e.mensaje}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {u.filas_omitidas > 0 && (
-                            <div className={styles.detailGroup}>
-                              <span className={`${styles.detailBadge} ${styles.detailBadgeOmitted}`}>{u.filas_omitidas} omitida{u.filas_omitidas === 1 ? '' : 's'}</span>
-                              <ul className={styles.detailList}>
-                                {(u.omitidas || []).map((o, i) => (
-                                  // eslint-disable-next-line react/no-array-index-key
-                                  <li key={i}>Fila {o.fila}: {o.mensaje}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {u.advertencias && u.advertencias.length > 0 && (
-                            <div className={styles.detailGroup}>
-                              <span className={`${styles.detailBadge} ${styles.detailBadgeWarning}`}>{u.advertencias.length} advertencia{u.advertencias.length === 1 ? '' : 's'}</span>
-                              <ul className={styles.detailList}>
-                                {u.advertencias.map((a, i) => (
-                                  // eslint-disable-next-line react/no-array-index-key
-                                  <li key={i}>Fila {a.fila}: {a.mensaje}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className={styles.historyEmpty}>
-                {historyLoading ? 'Cargando historial…' : 'Aún no se han cargado encuestas para esta campaña.'}
-              </p>
-            )}
-
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-on-surface-variant/70 text-center px-4">
+                  {historyLoading ? 'Cargando historial...' : 'Aún no se han cargado encuestas para esta campaña.'}
+                </div>
+              )}
+            </div>
+            
             {uploads.length > 0 && (
-              <span className={layoutStyles.footerLink} style={{ cursor: 'default', opacity: 0.5 }}>
-                Ver historial completo →
-              </span>
+              <div className="pt-4 border-t border-outline-variant/30 mt-4 text-center shrink-0">
+                <span className="text-xs text-primary font-medium opacity-50 cursor-default">
+                  Ver historial completo →
+                </span>
+              </div>
             )}
           </div>
 
           {/* Guía rápida */}
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Guía rápida</h3>
-            <ul className={layoutStyles.guiaList}>
-              <li className={layoutStyles.guiaItem}>
-                <div className={layoutStyles.guiaIconBox}><List size={18} strokeWidth={1.6} /></div>
-                <div className={layoutStyles.guiaInfo}>
-                  <div className={layoutStyles.guiaTitle}>Pasos para subir encuestas</div>
-                  <div className={layoutStyles.guiaSubtitle}>Aprende cómo importar tus archivos CSV correctamente</div>
+          <div className="glass-card rounded-xl p-6">
+            <h3 className="text-xl text-on-surface font-semibold mb-4">Guía rápida</h3>
+            <ul className="space-y-3 mb-4">
+              <li className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer group border border-transparent hover:border-outline-variant/30">
+                <div className="bg-primary/10 text-primary p-2 rounded-lg group-hover:scale-110 transition-transform"><List size={18} strokeWidth={1.5} /></div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-on-surface mb-0.5 group-hover:text-primary transition-colors">Pasos para subir encuestas</div>
+                  <div className="text-xs text-on-surface-variant">Aprende cómo importar tus archivos CSV correctamente</div>
                 </div>
-                <ChevronRight size={18} className={layoutStyles.guiaChevron} />
+                <ChevronRight size={18} className="text-on-surface-variant/50 group-hover:text-primary transition-colors" />
               </li>
-              <li className={layoutStyles.guiaItem}>
-                <div className={layoutStyles.guiaIconBox}><FileCheck2 size={18} strokeWidth={1.6} /></div>
-                <div className={layoutStyles.guiaInfo}>
-                  <div className={layoutStyles.guiaTitle}>Cómo registrar encuestas físicas</div>
-                  <div className={layoutStyles.guiaSubtitle}>Guía para completar encuestas directamente en el sistema</div>
+              <li className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer group border border-transparent hover:border-outline-variant/30">
+                <div className="bg-primary/10 text-primary p-2 rounded-lg group-hover:scale-110 transition-transform"><FileCheck2 size={18} strokeWidth={1.5} /></div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-on-surface mb-0.5 group-hover:text-primary transition-colors">Cómo registrar encuestas físicas</div>
+                  <div className="text-xs text-on-surface-variant">Guía para completar encuestas directamente en el sistema</div>
                 </div>
-                <ChevronRight size={18} className={layoutStyles.guiaChevron} />
+                <ChevronRight size={18} className="text-on-surface-variant/50 group-hover:text-primary transition-colors" />
               </li>
-              <li className={layoutStyles.guiaItem}>
-                <div className={layoutStyles.guiaIconBox}><Layers size={18} strokeWidth={1.6} /></div>
-                <div className={layoutStyles.guiaInfo}>
-                  <div className={layoutStyles.guiaTitle}>Tipos de CSV y formatos</div>
-                  <div className={layoutStyles.guiaSubtitle}>Conoce los formatos aceptados y sus diferencias</div>
+              <li className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container transition-colors cursor-pointer group border border-transparent hover:border-outline-variant/30">
+                <div className="bg-primary/10 text-primary p-2 rounded-lg group-hover:scale-110 transition-transform"><Layers size={18} strokeWidth={1.5} /></div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-on-surface mb-0.5 group-hover:text-primary transition-colors">Tipos de CSV y formatos</div>
+                  <div className="text-xs text-on-surface-variant">Conoce los formatos aceptados y sus diferencias</div>
                 </div>
-                <ChevronRight size={18} className={layoutStyles.guiaChevron} />
+                <ChevronRight size={18} className="text-on-surface-variant/50 group-hover:text-primary transition-colors" />
               </li>
             </ul>
-            <button type="button" className={layoutStyles.footerLink} style={{ marginTop: 4 }}>Ver guía completa →</button>
+            <button type="button" className="text-primary text-sm font-medium hover:underline w-full text-center">Ver guía completa →</button>
           </div>
         </div>
       </div>
