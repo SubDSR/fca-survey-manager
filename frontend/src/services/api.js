@@ -42,8 +42,29 @@ async function fetchJson(url) {
 
 export const api = {
   docentes: {
-    listar: () => fetchJson(`${BASE_URL}/api/docentes`),
+    listar: (params = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      ).toString();
+      return fetchJson(`${BASE_URL}/api/docentes${query ? `?${query}` : ''}`);
+    },
     obtener: (id) => fetchJson(`${BASE_URL}/api/docentes/${id}`),
+    catalogos: () => fetchJson(`${BASE_URL}/api/docentes/catalogos`),
+    crear: (payload) => request(`${BASE_URL}/api/docentes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    actualizar: (id, payload) => request(`${BASE_URL}/api/docentes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    cambiarActivo: (id, activo) => request(`${BASE_URL}/api/docentes/${id}/activo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activo }),
+    }),
   },
   encuestas: {
     consolidado: () => fetchJson(`${BASE_URL}/api/encuestas/consolidado`),

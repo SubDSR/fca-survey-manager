@@ -1,0 +1,466 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px 9px 36px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+}
+
+.filterSelect {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+  cursor: pointer;
+}
+
+.btnAdd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btnAdd:hover {
+  background: var(--color-primary-dark);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* .inner ahora llega a 1600px (antes 1280px) -- a ese ancho, 3 columnas
+   fijas dejan cards demasiado anchas/vacías; se suma una 4ta columna en
+   vez de solo estirar el espacio libre. */
+@media (min-width: 1400px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 16px;
+  color: var(--text-soft);
+  font-size: 14px;
+  background: var(--bg);
+  border-radius: var(--radius);
+}
+
+.actionErrorBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Formulario alta/edición */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+}
+
+.formRow .formField {
+  flex: 1;
+  min-width: 0;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.formField input,
+.formField select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+}
+
+.formField input:focus,
+.formField select:focus {
+  border-color: var(--color-primary);
+}
+
+.formError {
+  font-size: 12.5px;
+  color: var(--red);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btnPrimary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+}
+
+.btnPrimary:hover {
+  background: var(--color-primary-dark);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.btnSecondary {
+  background: transparent;
+  color: var(--text-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: var(--bg);
+}
+
+.btnDanger {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+}
+
+.btnDanger:hover {
+  filter: brightness(0.92);
+}
+
+.btnDanger:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Ver detalle */
+.viewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.viewGrid div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.viewGrid span {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.viewGrid b {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.confirmText {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0 0 4px;
+}
+
+/* Header propio del tab (título + ícono de ayuda + ilustración) -- ya no
+   usa el encabezado genérico de ConfigView.jsx, mismo patrón que
+   CargaTab.jsx. */
+.header {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.headerSubtitle {
+  font-size: 14px;
+  color: var(--text-soft);
+  margin: 4px 0 0;
+}
+
+.infoIconBtn {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  padding: 0;
+}
+
+.infoIconBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.infoTooltip {
+  position: absolute;
+  top: 26px;
+  left: 0;
+  background: #1f1f1d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 8px 10px;
+  border-radius: 8px;
+  width: 240px;
+  line-height: 1.4;
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  text-align: left;
+  cursor: default;
+}
+
+.header svg {
+  position: absolute;
+  top: -4px;
+  right: 0;
+}
+
+/* Paginación */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.paginationLabel {
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageNumBtn {
+  min-width: 30px;
+  justify-content: center;
+  padding: 6px 8px;
+}
+
+.pageNumBtnActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Historial de cambios */
+.historyList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.historyEntry {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.historyEntryHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+}
+
+.historyEntryAccion {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.historyEntryFecha {
+  font-size: 11.5px;
+  color: var(--text-soft);
+  margin-left: auto;
+}
+
+.historyDiffList {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.historyDiffList li {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.historyDiffList b {
+  color: var(--text);
+}
