@@ -72,16 +72,29 @@ export function toSummaryGroup(r) {
   };
 }
 
-export function needsFollowUp(group) {
-  return group.nota < 11 || group.pctNo >= 30;
+// `politica` viene de politica_evaluacion (GET /api/politica-evaluacion vía
+// DataContext) -- ya no hay 11/30/45 hardcodeados acá. umbral_aprobacion es
+// el mismo corte que usa v_seguimiento (nivel_alerta) y los reportes de
+// Evaluación Docente (aprobado/desaprobado): cualquier docente desaprobado
+// entra en seguimiento, no un umbral aparte más grave. Los umbrales de
+// pct_no no tienen un equivalente de "aprobado" al cual alinearse, así que
+// vienen de la política tal cual (no cambiaron de valor, solo de origen).
+export function needsFollowUp(group, politica) {
+  return group.nota < politica.umbral_aprobacion || group.pctNo >= politica.umbral_seguimiento_pct_no;
 }
 
-export function getFollowUpGroups(groups) {
+export function getFollowUpGroups(groups, politica) {
+  const { umbral_aprobacion: umbralAprobacion, umbral_seguimiento_pct_no: umbralSeguimientoPctNo, umbral_critico_pct_no: umbralCriticoPctNo } = politica;
   const flagged = [];
   groups.forEach((g) => {
     const reasons = [];
-    if (g.nota < 11) reasons.push({ label: 'Nota Dim. I: ' + g.nota.toFixed(1) + ' (< 11)', level: 'red' });
-    if (g.pctNo >= 30) reasons.push({ label: '% de "No": ' + Math.round(g.pctNo) + '% (≥ 30%)', level: g.pctNo >= 45 ? 'red' : 'yellow' });
+    if (g.nota < umbralAprobacion) reasons.push({ label: `Nota Dim. I: ${g.nota.toFixed(1)} (< ${umbralAprobacion})`, level: 'red' });
+    if (g.pctNo >= umbralSeguimientoPctNo) {
+      reasons.push({
+        label: `% de "No": ${Math.round(g.pctNo)}% (≥ ${umbralSeguimientoPctNo}%)`,
+        level: g.pctNo >= umbralCriticoPctNo ? 'red' : 'yellow',
+      });
+    }
     if (reasons.length) {
       flagged.push({
         docente: g.docente, programa: g.programa, ciclo: g.ciclo, seccion: g.seccion,

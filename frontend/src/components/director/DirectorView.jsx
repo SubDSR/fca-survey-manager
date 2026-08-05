@@ -9,6 +9,7 @@ import PrintHeader from '../common/PrintHeader.jsx';
 import Filters from './Filters.jsx';
 import AlertBanner from './AlertBanner.jsx';
 import KpiGrid from './KpiGrid.jsx';
+import SeguimientoDocentesCard from './SeguimientoDocentesCard.jsx';
 import CriteriaChart from './CriteriaChart.jsx';
 import DirectivesChart from './DirectivesChart.jsx';
 import CicloTrendChart from './CicloTrendChart.jsx';
@@ -30,8 +31,8 @@ import styles from './DirectorView.module.css';
    que Filters quede fuera de esa restricción y llegue edge-to-edge como el
    TopbarRed (ver Tarea 2 del plan). */
 
-export default function DirectorView({ onOpenSeguimiento, onSelectDocente, sharedFilters }) {
-  const { criteriaLabels, directiveLabels, shortCriteriaLabels, directivas } = useData();
+export default function DirectorView({ onOpenSeguimiento, onSelectDocente, onIrAGestion, sharedFilters }) {
+  const { criteriaLabels, directiveLabels, shortCriteriaLabels, directivas, politica } = useData();
   const { filters, setFilter, toggleCiclo, clearCiclo, reset, options, filteredRows } = sharedFilters;
 
   const [search, setSearch] = useState('');
@@ -45,7 +46,7 @@ export default function DirectorView({ onOpenSeguimiento, onSelectDocente, share
   // solo calcular el % de "No" (vía la vista de directivas) para el aviso de
   // seguimiento — ver lib/directorGroups.js.
   const groups = useMemo(() => buildDirectorGroups(filteredRows, directivas), [filteredRows, directivas]);
-  const followUpGroups = useMemo(() => getFollowUpGroups(groups), [groups]);
+  const followUpGroups = useMemo(() => getFollowUpGroups(groups, politica), [groups, politica]);
   const [exporting, setExporting] = useState(false);
 
   const handleExportExcel = async () => {
@@ -85,9 +86,11 @@ export default function DirectorView({ onOpenSeguimiento, onSelectDocente, share
       />
 
       <div className={`content-shell ${appStyles.shell}`}>
-        <AlertBanner groups={followUpGroups} onOpenSeguimiento={() => onOpenSeguimiento?.(followUpGroups)} />
+        <AlertBanner groups={followUpGroups} onOpenSeguimiento={() => onOpenSeguimiento?.(followUpGroups)} politica={politica} />
 
         <KpiGrid groups={groups} />
+
+        <SeguimientoDocentesCard onIrAGestion={onIrAGestion} />
 
         <div className={styles.chartsGrid}>
           <CriteriaChart rows={filteredRows} />

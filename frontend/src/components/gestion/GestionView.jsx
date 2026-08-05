@@ -240,7 +240,7 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
             </div>
 
             <div className={styles.card} style={{ marginBottom: '40px' }}>
-              <div className={styles.cardTitle}><BookOpen size={18} /> Asignación Actual (Encuestas)</div>
+              <div className={styles.cardTitle}><BookOpen size={18} /> Cursos Asignados (Carga Oficial)</div>
               {selectedProfile.cursos && selectedProfile.cursos.length > 0 ? (
                 <div className={styles.tableContainer}>
                   <table className={styles.table}>
@@ -250,6 +250,8 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
                         <th>Programa</th>
                         <th>Ciclo</th>
                         <th>Sección</th>
+                        <th>Encuestas</th>
+                        <th>Nota</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -259,6 +261,8 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
                           <td>{ac.programa}</td>
                           <td>{ac.ciclo || '-'}</td>
                           <td>{ac.seccion || '-'}</td>
+                          <td>{ac.n_encuestas > 0 ? ac.n_encuestas : '—'}</td>
+                          <td>{ac.nota_promedio != null ? Number(ac.nota_promedio).toFixed(1) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -267,7 +271,7 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
               ) : (
                 <div className={styles.emptyState} style={{ padding: '40px' }}>
                   <UsersIcon size={32} />
-                  <div>Este docente no tiene cursos asignados en el registro.</div>
+                  <div>Este docente no tiene cursos en la carga oficial.</div>
                 </div>
               )}
             </div>

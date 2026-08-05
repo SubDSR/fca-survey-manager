@@ -21,7 +21,20 @@ import appStyles from '../../App.module.css';
 
 export default function CursoView({ onOpenCriteriaInfo, onOpenDocente }) {
   const { criteriaLabels, directiveLabels, shortCriteriaLabels, groupRows, criterios } = useData();
-  const { sel, setSel, reset, options, filteredRows, programaRows } = useCursoFilters(groupRows);
+
+  // Catálogo completo de programas/cursos (GET /api/programas + GET
+  // /api/asignaturas), independiente de qué tenga encuestas cargadas — ver
+  // useCursoFilters.js.
+  const [catalogo, setCatalogo] = useState({ programas: [], asignaturas: [] });
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([api.programas.listar(), api.asignaturas.listar()])
+      .then(([programas, asignaturas]) => { if (!cancelled) setCatalogo({ programas, asignaturas }); })
+      .catch((err) => console.error('No se pudo cargar el catálogo de programas/asignaturas:', err));
+    return () => { cancelled = true; };
+  }, []);
+
+  const { sel, setSel, reset, options, filteredRows, programaRows } = useCursoFilters(groupRows, catalogo);
   const [tab, setTab] = useState('resumen');
   const [exporting, setExporting] = useState(false);
   const [criteriaView, setCriteriaView] = useState('radar');

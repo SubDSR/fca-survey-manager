@@ -30,6 +30,11 @@ describe('estadísticas', () => {
   });
 });
 
+// 14 acá es un fixture de test (equivale a politica_evaluacion.umbral_aprobacion
+// del entorno real), no el hardcode de producción que se eliminó de stats.js --
+// ambas funciones ahora reciben el umbral como parámetro explícito.
+const UMBRAL_APROBACION_TEST = 14;
+
 describe('classifyDocentesByEstado', () => {
   // rows son grupos docente+asignatura+ciclo+sección (GET /api/encuestas/
   // consolidado), cada uno con su propio n -- el promedio por docente debe
@@ -41,14 +46,14 @@ describe('classifyDocentesByEstado', () => {
       { docente: 'Beto', notaFinal: 10, n: 5 },
       { docente: 'Beto', notaFinal: 12, n: 5 },
     ];
-    const result = classifyDocentesByEstado(rows);
+    const result = classifyDocentesByEstado(rows, UMBRAL_APROBACION_TEST);
     expect(result.get('Ana')).toBe('aprobado');
     expect(result.get('Beto')).toBe('desaprobado');
   });
 
   it('el umbral exacto 14 cuenta como aprobado', () => {
     const rows = [{ docente: 'Cati', notaFinal: 14, n: 3 }];
-    expect(classifyDocentesByEstado(rows).get('Cati')).toBe('aprobado');
+    expect(classifyDocentesByEstado(rows, UMBRAL_APROBACION_TEST).get('Cati')).toBe('aprobado');
   });
 
   it('pondera por n: una sección con más encuestas pesa más que una con pocas', () => {
@@ -56,7 +61,7 @@ describe('classifyDocentesByEstado', () => {
       { docente: 'Dora', notaFinal: 20, n: 1 }, // pesa poco
       { docente: 'Dora', notaFinal: 10, n: 9 }, // pesa mucho -> promedio ponderado 11
     ];
-    expect(classifyDocentesByEstado(rows).get('Dora')).toBe('desaprobado');
+    expect(classifyDocentesByEstado(rows, UMBRAL_APROBACION_TEST).get('Dora')).toBe('desaprobado');
   });
 });
 
@@ -68,7 +73,7 @@ describe('computeDocenteVsPrograma', () => {
   it('calcula nota del docente, del programa, delta y aprobado (grupos con igual peso)', () => {
     const cursoRows = [{ notaFinal: 16, n: 5 }, { notaFinal: 14, n: 5 }]; // avg 15
     const programaRows = [{ notaFinal: 12, n: 5 }, { notaFinal: 12, n: 5 }]; // avg 12
-    const result = computeDocenteVsPrograma(cursoRows, programaRows);
+    const result = computeDocenteVsPrograma(cursoRows, programaRows, UMBRAL_APROBACION_TEST);
     expect(result.notaDocente).toBeCloseTo(15, 5);
     expect(result.notaPrograma).toBeCloseTo(12, 5);
     expect(result.delta).toBeCloseTo(3, 5);
@@ -78,13 +83,13 @@ describe('computeDocenteVsPrograma', () => {
 
   it('pondera por n: un grupo con más encuestas pesa más en el promedio', () => {
     const cursoRows = [{ notaFinal: 20, n: 1 }, { notaFinal: 10, n: 9 }]; // (20*1 + 10*9)/10 = 11
-    const result = computeDocenteVsPrograma(cursoRows, []);
+    const result = computeDocenteVsPrograma(cursoRows, [], UMBRAL_APROBACION_TEST);
     expect(result.notaDocente).toBeCloseTo(11, 5);
     expect(result.n).toBe(10);
   });
 
   it('programaRows vacío no rompe (notaPrograma = 0)', () => {
-    const result = computeDocenteVsPrograma([{ notaFinal: 10, n: 3 }], []);
+    const result = computeDocenteVsPrograma([{ notaFinal: 10, n: 3 }], [], UMBRAL_APROBACION_TEST);
     expect(result.notaPrograma).toBe(0);
     expect(result.aprobado).toBe(false);
   });

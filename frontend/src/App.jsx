@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useData } from './context/DataContext.jsx';
 import { useSharedFilters } from './hooks/useSharedFilters.js';
 import { useDocenteSelection } from './hooks/useDocenteSelection.js';
@@ -17,8 +18,8 @@ import CursoDetailModal from './components/modals/CursoDetailModal.jsx';
 const EMPTY_MODAL = { kind: null, payload: null };
 
 export default function App() {
-  const { status, error, groupRows } = useData();
-  const [view, setView] = useState('director');
+  const { status, error, groupRows, politica } = useData();
+  const navigate = useNavigate();
   const [modal, setModal] = useState(EMPTY_MODAL);
   const [pendingDocenteSelection, setPendingDocenteSelection] = useState(null);
   const [pendingGestionId, setPendingGestionId] = useState(null);
@@ -41,7 +42,7 @@ export default function App() {
 
   const docenteStats = sel.selected && cursoRows.length
     ? {
-      ...computeDocenteVsPrograma(cursoRows, programaRows),
+      ...computeDocenteVsPrograma(cursoRows, programaRows, politica.umbral_aprobacion),
       nValidas: cursoRows.reduce((a, r) => a + (r.nValidas || 0), 0),
     }
     : null;
@@ -62,7 +63,7 @@ export default function App() {
       programa: group.programa, docente: group.docente,
       curso: group.curso, ciclo: group.ciclo, seccion: group.seccion,
     });
-    setView('docente');
+    navigate('/evaluacion-docente');
     closeModal();
   };
 
@@ -74,76 +75,92 @@ export default function App() {
       programa: group.programa, docente: group.docente,
       curso: group.curso, ciclo: group.ciclo, seccion: group.seccion,
     });
-    setView('docente');
+    navigate('/evaluacion-docente');
   };
 
-  // Cambio de vista MANUAL desde el sidebar/topbar: solo descarta la selección
-  // PENDIENTE (la que llevaría a precargar un docente al entrar a la vista
-  // Docente). La selección normal (`sel`, en useDocenteSelection) vive en este
-  // componente padre desde que se elevó para alimentar el sidebar dinámico
-  // (Filtros activos / mini-card), así que persiste al alternar entre Director
-  // de Carrera y Docente Individual: volver a "Evaluación Docente" conserva el
-  // último docente elegido en vez de remontar en blanco. La navegación por
-  // clic (handleVerDetalle / handleSelectDocente) llama a setView directamente,
-  // sin pasar por aquí, para sí forzar una nueva selección pendiente.
-  const handleViewChange = (nextView) => {
+  // Navegación MANUAL desde el sidebar (clic en un NavLink): solo descarta la
+  // selección PENDIENTE (la que llevaría a precargar un docente al entrar a
+  // la vista Docente). La selección normal (`sel`, en useDocenteSelection)
+  // vive en este componente padre desde que se elevó para alimentar el
+  // sidebar dinámico (Filtros activos / mini-card), así que persiste al
+  // alternar entre Director de Carrera y Docente Individual: volver a
+  // "Evaluación Docente" conserva el último docente elegido en vez de
+  // remontar en blanco. La navegación por clic en una fila/nombre
+  // (handleVerDetalle / handleSelectDocente) navega directamente, sin pasar
+  // por acá, para sí forzar una nueva selección pendiente. El cambio de ruta
+  // en sí ya lo resuelve el <NavLink to="..."> del Sidebar.
+  const handleViewChange = () => {
     setPendingDocenteSelection(null);
     setPendingGestionId(null);
-    setView(nextView);
   };
 
   const handleIrAGestion = (docenteId) => {
     setPendingGestionId(docenteId);
-    setView('gestion');
+    navigate('/gestion-docentes');
   };
 
   return (
     <>
       <AppLayout
-        view={view}
         onViewChange={handleViewChange}
         onSelectDocente={handleSelectDocente}
         sel={sel}
         docenteStats={docenteStats}
       >
-        {status === 'ready' && view === 'director' && (
-          <DirectorView
-            onOpenSeguimiento={(groups) => openModal('seguimiento', groups)}
-            onSelectDocente={handleSelectDocente}
-            sharedFilters={sharedFilters}
-          />
-        )}
-        {status === 'ready' && view === 'docente' && (
-          <DocenteView
-            onIrAGestion={handleIrAGestion}
-            onOpenCriteriaInfo={(cursoRows) => openModal('criteria', cursoRows)}
-            onOpenCurso={(group) => openModal('curso', group)}
-            sel={sel}
-            cursoLabel={cursoLabel}
-            setSel={setSel}
-            onToggleCiclo={sharedFilters.toggleCiclo}
-            onClearCiclo={sharedFilters.clearCiclo}
-            reset={reset}
-            options={options}
-            docenteRows={docenteRows}
-            cursoRows={cursoRows}
-            programaRows={programaRows}
-          />
-        )}
-        {status === 'ready' && view === 'cursos' && (
-          <CursoView 
-            onOpenCriteriaInfo={(cursoRows) => openModal('criteria', cursoRows)}
-            onOpenDocente={(group) => openModal('docente-en-curso', group)}
-          />
-        )}
-        {status === 'ready' && view === 'gestion' && (
-          <GestionView
-            initialDocenteId={pendingGestionId}
-            activeDocenteIds={activeDocenteIds}
-          />
-        )}
-        {status === 'ready' && view === 'config' && (
-          <ConfigView />
+        {status === 'ready' && (
+          <Routes>
+            <Route
+              path="/"
+              element={(
+                <DirectorView
+                  onOpenSeguimiento={(groups) => openModal('seguimiento', groups)}
+                  onSelectDocente={handleSelectDocente}
+                  onIrAGestion={handleIrAGestion}
+                  sharedFilters={sharedFilters}
+                />
+              )}
+            />
+            <Route
+              path="/evaluacion-docente"
+              element={(
+                <DocenteView
+                  onIrAGestion={handleIrAGestion}
+                  onOpenCriteriaInfo={(cursoRows) => openModal('criteria', cursoRows)}
+                  onOpenCurso={(group) => openModal('curso', group)}
+                  sel={sel}
+                  cursoLabel={cursoLabel}
+                  setSel={setSel}
+                  onToggleCiclo={sharedFilters.toggleCiclo}
+                  onClearCiclo={sharedFilters.clearCiclo}
+                  reset={reset}
+                  options={options}
+                  docenteRows={docenteRows}
+                  cursoRows={cursoRows}
+                  programaRows={programaRows}
+                />
+              )}
+            />
+            <Route
+              path="/cursos-y-programas"
+              element={(
+                <CursoView
+                  onOpenCriteriaInfo={(cursoRows) => openModal('criteria', cursoRows)}
+                  onOpenDocente={(group) => openModal('docente-en-curso', group)}
+                />
+              )}
+            />
+            <Route
+              path="/gestion-docentes"
+              element={(
+                <GestionView
+                  initialDocenteId={pendingGestionId}
+                  activeDocenteIds={activeDocenteIds}
+                />
+              )}
+            />
+            <Route path="/configuracion/*" element={<ConfigView />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         )}
         {status === 'error' && <p>{error}</p>}
         {status !== 'ready' && status !== 'error' && <EmptyState />}
@@ -154,6 +171,7 @@ export default function App() {
         onClose={closeModal}
         groups={modal.kind === 'seguimiento' ? modal.payload : []}
         onVerDetalle={handleVerDetalle}
+        politica={politica}
       />
       <CriteriaInfoModal
         open={modal.kind === 'criteria'}

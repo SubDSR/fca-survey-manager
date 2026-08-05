@@ -1,6 +1,8 @@
 import { parse } from 'csv-parse/sync';
 import { supabase } from '../config/supabase.js';
-import { importarFilasCsv } from '../services/importarEncuestas.js';
+import { importarFilasCsv, resolverPendiente } from '../services/importarEncuestas.js';
+import { importarFilasCsvVirtual, COLUMNAS_ESPERADAS_VIRTUAL } from '../services/importarEncuestasVirtual.js';
+import { detectarContextoVirtual } from '../services/detectarContextoVirtual.js';
 
 const COLUMNAS_ESPERADAS = [
   'Programa', 'Ciclo', 'Seccion', 'Aula', 'Codigo', 'Docente', 'Curso',
@@ -15,7 +17,7 @@ export async function listarCargasPorCampania(req, res) {
 
   const { data, error } = await supabase
     .from('carga_csv')
-    .select('id, archivo_nombre, filas_leidas, filas_insertadas, filas_omitidas, filas_error, estado, mensaje_error, visible, errores, omitidas, advertencias, fecha_carga')
+    .select('id, archivo_nombre, filas_leidas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga')
     .eq('campania_id', campania_id)
     .order('fecha_carga', { ascending: false });
 
@@ -29,12 +31,30 @@ export async function listarCargasPorCampania(req, res) {
 }
 
 // POST /api/cargas — multipart/form-data: file (csv) + periodo_id
+//   + tipo='virtual' + curso_grupo_docente_id, para cargas de encuestas
+//   virtuales (CSV sin Programa/Docente/Curso por fila — ese contexto se
+//   fija una sola vez para todo el archivo, elegido en la UI).
 export async function subirCarga(req, res) {
-  const { periodo_id } = req.body;
+  const { periodo_id, tipo } = req.body;
   const archivo = req.file;
+  const esVirtual = tipo === 'virtual';
 
   if (!periodo_id) return res.status(400).json({ error: 'Falta el parámetro periodo_id' });
   if (!archivo) return res.status(400).json({ error: 'No se recibió ningún archivo CSV' });
+
+  let cursoGrupoDocenteId = null;
+  if (esVirtual) {
+    cursoGrupoDocenteId = Number(req.body.curso_grupo_docente_id);
+    if (!cursoGrupoDocenteId) return res.status(400).json({ error: 'Falta el parámetro curso_grupo_docente_id' });
+
+    const { data: cgd, error: errorCgd } = await supabase
+      .from('curso_grupo_docente')
+      .select('id')
+      .eq('id', cursoGrupoDocenteId)
+      .maybeSingle();
+    if (errorCgd) return res.status(500).json({ error: errorCgd.message });
+    if (!cgd) return res.status(404).json({ error: 'curso_grupo_docente no encontrado' });
+  }
 
   const { data: periodo, error: errorPeriodo } = await supabase
     .from('periodo_academico')
@@ -68,7 +88,8 @@ export async function subirCarga(req, res) {
   if (filas.length === 0) {
     return res.status(400).json({ error: 'El archivo CSV no contiene filas.' });
   }
-  const faltantes = COLUMNAS_ESPERADAS.filter((c) => !Object.keys(filas[0]).includes(c));
+  const columnasEsperadas = esVirtual ? COLUMNAS_ESPERADAS_VIRTUAL : COLUMNAS_ESPERADAS;
+  const faltantes = columnasEsperadas.filter((c) => !Object.keys(filas[0]).includes(c));
   if (faltantes.length > 0) {
     return res.status(400).json({ error: `Faltan columnas requeridas en el CSV: ${faltantes.join(', ')}` });
   }
@@ -80,22 +101,24 @@ export async function subirCarga(req, res) {
       archivo_nombre: archivo.originalname,
       filas_leidas: filas.length,
       estado: 'procesando',
+      modalidad_carga: esVirtual ? 'virtual' : 'presencial',
     })
     .select()
     .single();
   if (errorCarga) return res.status(500).json({ error: errorCarga.message });
 
   try {
-    const { filasInsertadas, errores, omitidas, advertencias } = await importarFilasCsv(
-      filas,
-      periodo,
-      campania.id,
-      carga.id
-    );
+    const resultado = esVirtual
+      ? await importarFilasCsvVirtual(filas, { campaniaId: campania.id, cargaId: carga.id, cursoGrupoDocenteId })
+      : await importarFilasCsv(filas, periodo, campania.id, carga.id);
+    const { filasInsertadas, errores, omitidas, advertencias } = resultado;
+    // Solo la rama presencial puede producir pendientes (fuzzy matching) —
+    // importarFilasCsvVirtual no devuelve este campo, de ahí el default 0.
+    const filasPendientes = resultado.filasPendientes || 0;
 
     const estadoFinal = errores.length === 0
       ? 'completado'
-      : filasInsertadas === 0
+      : filasInsertadas === 0 && filasPendientes === 0
         ? 'error'
         : 'completado_con_errores';
 
@@ -106,6 +129,7 @@ export async function subirCarga(req, res) {
         filas_insertadas: filasInsertadas,
         filas_omitidas: omitidas.length,
         filas_error: errores.length,
+        filas_pendientes: filasPendientes,
         errores: errores.length > 0 ? errores : null,
         omitidas: omitidas.length > 0 ? omitidas : null,
         advertencias: advertencias.length > 0 ? advertencias : null,
@@ -123,6 +147,87 @@ export async function subirCarga(req, res) {
       .update({ estado: 'error', mensaje_error: err.message })
       .eq('id', carga.id);
     res.status(500).json({ error: `Error insertando datos: ${err.message}` });
+  }
+}
+
+// GET /api/cargas/detectar-contexto-virtual?nombre_archivo=... — sugiere
+// Docente/Curso/Ciclo/Sección/Programa a partir del nombre del archivo
+// virtual (ver services/detectarContextoVirtual.js). Solo lectura, no
+// dispara ninguna carga -- el usuario siempre confirma o corrige antes de
+// que se inserte una sola fila.
+export async function detectarContextoVirtualHandler(req, res) {
+  const { nombre_archivo: nombreArchivo } = req.query;
+  if (!nombreArchivo) return res.status(400).json({ error: 'Falta el parámetro nombre_archivo' });
+
+  try {
+    const resultado = await detectarContextoVirtual(nombreArchivo);
+    res.json(resultado);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// GET /api/cargas/:id/pendientes — filas de una carga presencial que
+// quedaron ambiguas (fuzzy matching, ver importarEncuestas.js) sin resolver
+// todavía. Cada una trae sus candidatos sugeridos para que la UI arme los
+// botones [Usar "X" (N%)] inline.
+export async function listarPendientesDeCarga(req, res) {
+  const { id } = req.params;
+
+  const { data, error } = await supabase
+    .from('carga_pendiente')
+    .select('id, carga_id, fila_numero, tipo, valor_csv, candidatos, estado, created_at')
+    .eq('carga_id', id)
+    .eq('estado', 'pendiente')
+    .order('fila_numero', { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json(data);
+}
+
+// POST /api/cargas/pendientes/:pendienteId/resolver
+// body: { accion: 'usar_existente'|'crear_nuevo'|'descartar', docente_id?, asignatura_id? }
+export async function resolverPendienteCarga(req, res) {
+  const { pendienteId } = req.params;
+  const { accion, docente_id, asignatura_id } = req.body || {};
+
+  if (!['usar_existente', 'crear_nuevo', 'descartar'].includes(accion)) {
+    return res.status(400).json({ error: 'El campo "accion" debe ser usar_existente, crear_nuevo o descartar.' });
+  }
+
+  try {
+    const resultado = await resolverPendiente(pendienteId, {
+      accion,
+      docenteId: docente_id ? Number(docente_id) : null,
+      asignaturaId: asignatura_id ? Number(asignatura_id) : null,
+    });
+
+    switch (resultado.estado) {
+      case 'no_encontrado':
+        return res.status(404).json({ error: 'Pendiente no encontrado' });
+      case 'ya_resuelto':
+        return res.status(409).json({ error: `Este pendiente ya fue ${resultado.pendiente.estado}.` });
+      case 'falta_id':
+        return res.status(400).json({ error: 'Falta el id del docente/asignatura elegido.' });
+      case 'referencia_no_encontrada':
+        return res.status(404).json({ error: 'El docente/asignatura elegido no existe.' });
+      case 'accion_invalida':
+        return res.status(400).json({ error: 'Acción inválida.' });
+      case 'resuelto_parcial':
+        return res.json({ estado: 'resuelto_parcial', mensaje: 'Resuelto — esta fila todavía tiene otra ambigüedad pendiente.' });
+      case 'fila_descartada':
+        return res.json({ estado: 'fila_descartada', mensaje: 'Resuelto — la fila no se insertará (se descartó uno de sus datos ambiguos).' });
+      case 'fila_insertada':
+        return res.json({ estado: 'fila_insertada', mensaje: 'Fila insertada correctamente.' });
+      case 'fila_omitida':
+        return res.json({ estado: 'fila_omitida', mensaje: resultado.mensaje });
+      case 'fila_error':
+        return res.status(422).json({ estado: 'fila_error', error: resultado.mensaje });
+      default:
+        return res.status(500).json({ error: 'Estado de resolución no reconocido.' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 }
 

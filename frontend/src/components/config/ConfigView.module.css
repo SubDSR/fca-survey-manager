@@ -5,7 +5,7 @@
 }
 
 .inner {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -26,11 +26,40 @@
   margin: 0;
 }
 
+/* Tabs del módulo de Configuración */
+.tabBar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 4px;
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+.tabBtn:hover {
+  color: var(--text);
+}
+
+.tabBtnActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
 /* Cards */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 16px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   padding: 24px;
   margin-bottom: 24px;
@@ -552,6 +581,15 @@
 
 .confirmBtn:hover {
   background: var(--color-primary-dark);
+}
+
+.confirmBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmBtn:disabled:hover {
+  background: var(--color-primary);
 }
 
 /* Success banner */

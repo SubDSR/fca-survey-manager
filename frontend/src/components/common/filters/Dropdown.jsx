@@ -7,7 +7,7 @@ function normalizeOption(option) {
     : { value: option, label: option };
 }
 
-export default function Dropdown({ label, value, options, onChange, placeholder }) {
+export default function Dropdown({ label, value, options, onChange, placeholder, widthClass = 'w-[160px]' }) {
   const [open, setOpen] = useState(false);
   const [term, setTerm] = useState('');
   const ref = useRef(null);
@@ -23,7 +23,7 @@ export default function Dropdown({ label, value, options, onChange, placeholder 
   }, []);
 
   return (
-    <div ref={ref} className="flex flex-col gap-1 w-[160px] shrink-0 relative">
+    <div ref={ref} className={`flex flex-col gap-1 ${widthClass} shrink-0 relative`}>
       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
       <button
         type="button"

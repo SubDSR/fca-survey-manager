@@ -42,8 +42,29 @@ async function fetchJson(url) {
 
 export const api = {
   docentes: {
-    listar: () => fetchJson(`${BASE_URL}/api/docentes`),
+    listar: (params = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      ).toString();
+      return fetchJson(`${BASE_URL}/api/docentes${query ? `?${query}` : ''}`);
+    },
     obtener: (id) => fetchJson(`${BASE_URL}/api/docentes/${id}`),
+    catalogos: () => fetchJson(`${BASE_URL}/api/docentes/catalogos`),
+    crear: (payload) => request(`${BASE_URL}/api/docentes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    actualizar: (id, payload) => request(`${BASE_URL}/api/docentes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    cambiarActivo: (id, activo) => request(`${BASE_URL}/api/docentes/${id}/activo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activo }),
+    }),
   },
   encuestas: {
     consolidado: () => fetchJson(`${BASE_URL}/api/encuestas/consolidado`),
@@ -58,7 +79,51 @@ export const api = {
     },
   },
   programas: {
-    listar: () => fetchJson(`${BASE_URL}/api/programas`),
+    listar: (params = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      ).toString();
+      return fetchJson(`${BASE_URL}/api/programas${query ? `?${query}` : ''}`);
+    },
+    catalogos: () => fetchJson(`${BASE_URL}/api/programas/catalogos`),
+    crear: (payload) => request(`${BASE_URL}/api/programas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    actualizar: (id, payload) => request(`${BASE_URL}/api/programas/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    cambiarActivo: (id, activo) => request(`${BASE_URL}/api/programas/${id}/activo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activo }),
+    }),
+  },
+  asignaturas: {
+    listar: (params = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      ).toString();
+      return fetchJson(`${BASE_URL}/api/asignaturas${query ? `?${query}` : ''}`);
+    },
+    crear: (payload) => request(`${BASE_URL}/api/asignaturas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    actualizar: (id, payload) => request(`${BASE_URL}/api/asignaturas/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    cambiarActivo: (id, activo) => request(`${BASE_URL}/api/asignaturas/${id}/activo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activo }),
+    }),
   },
   periodos: {
     listar: () => request(`${BASE_URL}/api/periodos`),
@@ -68,6 +133,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
     activar: (id) => request(`${BASE_URL}/api/periodos/${id}/activar`, { method: 'PATCH' }),
+    editar: (id, payload) => request(`${BASE_URL}/api/periodos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+    eliminar: (id) => request(`${BASE_URL}/api/periodos/${id}`, { method: 'DELETE' }),
     // 404 es una respuesta válida y esperada aquí (período sin campaña
     // abierta/borrador) — no es un error de red, la UI debe distinguirlo.
     campaniaActiva: (id) => request(`${BASE_URL}/api/periodos/${id}/campania-activa`),
@@ -80,11 +151,46 @@ export const api = {
       formData.append('file', file);
       return request(`${BASE_URL}/api/cargas`, { method: 'POST', body: formData });
     },
+    subirVirtual: (periodoId, cursoGrupoDocenteId, file) => {
+      const formData = new FormData();
+      formData.append('periodo_id', periodoId);
+      formData.append('tipo', 'virtual');
+      formData.append('curso_grupo_docente_id', cursoGrupoDocenteId);
+      formData.append('file', file);
+      return request(`${BASE_URL}/api/cargas`, { method: 'POST', body: formData });
+    },
+    detectarContextoVirtual: (nombreArchivo) => request(`${BASE_URL}/api/cargas/detectar-contexto-virtual?${new URLSearchParams({ nombre_archivo: nombreArchivo })}`),
+    pendientes: (cargaId) => request(`${BASE_URL}/api/cargas/${cargaId}/pendientes`),
+    resolverPendiente: (pendienteId, payload) => request(`${BASE_URL}/api/cargas/pendientes/${pendienteId}/resolver`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
     cambiarVisibilidad: (id, visible) => request(`${BASE_URL}/api/cargas/${id}/visibilidad`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visible }),
     }),
     eliminar: (id) => request(`${BASE_URL}/api/cargas/${id}`, { method: 'DELETE' }),
+  },
+  auditLog: {
+    listar: (tabla, registroId) => fetchJson(`${BASE_URL}/api/audit-log?tabla=${tabla}&registro_id=${registroId}`),
+  },
+  politicaEvaluacion: {
+    obtener: () => fetchJson(`${BASE_URL}/api/politica-evaluacion`),
+  },
+  revisiones: {
+    listar: (params = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      ).toString();
+      return fetchJson(`${BASE_URL}/api/revisiones${query ? `?${query}` : ''}`);
+    },
+    obtener: (id) => fetchJson(`${BASE_URL}/api/revisiones/${id}`),
+    resolver: (id, payload) => request(`${BASE_URL}/api/revisiones/${id}/resolver`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
   },
 };

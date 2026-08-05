@@ -1,7 +1,17 @@
 import { supabase } from '../config/supabase.js';
 import { normalizarTexto, claveCarga, cicloDesdeRomano } from '../utils/normalizar.js';
+import { parsearNombreDocente } from '../utils/parsearNombre.js';
 
 const MODALIDAD_DEFECTO = 'PRESENCIAL'; // ASUNCIÓN: el CSV no trae modalidad.
+
+// Umbrales del árbol de decisión de fuzzy matching (ver
+// docs/plans/2026-08-04-modulo-configuracion-design.md, sección 4.4):
+//   0 candidatos (similitud < UMBRAL_MINIMO para todos) -> crear nuevo
+//   1 candidato con similitud >= UMBRAL_AUTOACEPTAR -> usar ese id + advertencia
+//   cualquier otro caso con >=1 candidato -> ambiguo, encolar en carga_pendiente
+const UMBRAL_MINIMO = 0.6;
+const UMBRAL_AUTOACEPTAR = 0.85;
+const LIMITE_CANDIDATOS = 5;
 
 // ============================================================
 // Catálogos — se cargan una vez por carga de CSV, no por fila.
@@ -57,6 +67,22 @@ async function cargarCatalogos() {
   }
 
   return { programaIdPorEtiqueta, tipoPorEscalaId, preguntaPorCodigo, opcionPorEtiqueta, modalidadDefectoId };
+}
+
+// Arma el contexto compartido de una pasada de importación (catálogos +
+// caches de resolución). Exportado: el endpoint de resolución de
+// pendientes (POST /api/cargas/pendientes/:id/resolver) lo usa para volver
+// a llamar procesarFila() días después de la carga original, con su propio
+// contexto fresco (no hay caches que reusar entre requests HTTP distintos).
+export async function crearContextoImportacion() {
+  const catalogos = await cargarCatalogos();
+  return {
+    catalogos,
+    cachePlanes: new Map(),
+    cacheAsignaturas: new Map(),
+    cacheDocentes: new Map(),
+    cacheEncuestados: new Map(),
+  };
 }
 
 async function resolverPlanEstudios(programaId, anioPeriodo) {
@@ -116,6 +142,20 @@ async function resolverGrupo({ periodoId, programaId, planEstudiosIdCalculado, c
   return nuevo;
 }
 
+// Árbol de decisión (sección 4.4 del diseño), común a docente/asignatura:
+//   1. Match exacto por clave -> resuelto, sin llamar al fuzzy matcher.
+//   2. MISS exacto -> fn_buscar_*_similar(clave, 0.6, 5):
+//      a. 0 candidatos            -> null (el llamador crea uno nuevo)
+//      b. 1 candidato, sim >= .85 -> resuelto + advertencia
+//      c. cualquier otro caso     -> pendiente (ambiguo, no se crea nada)
+function evaluarCandidatos(candidatos) {
+  if (!candidatos || candidatos.length === 0) return { caso: 'sin_candidatos' };
+  if (candidatos.length === 1 && candidatos[0].similitud >= UMBRAL_AUTOACEPTAR) {
+    return { caso: 'autoaceptar', elegido: candidatos[0] };
+  }
+  return { caso: 'ambiguo', candidatos };
+}
+
 async function resolverAsignatura({ planEstudiosId, nombreCurso, cacheAsignaturas }) {
   const clave = normalizarTexto(nombreCurso);
   if (!cacheAsignaturas.has(planEstudiosId)) {
@@ -130,8 +170,34 @@ async function resolverAsignatura({ planEstudiosId, nombreCurso, cacheAsignatura
     cacheAsignaturas.set(planEstudiosId, new Map((data || []).map((a) => [a.clave_busqueda, a.id])));
   }
   const mapa = cacheAsignaturas.get(planEstudiosId);
-  if (mapa.has(clave)) return mapa.get(clave);
+  if (mapa.has(clave)) return { estado: 'resuelto', id: mapa.get(clave) };
 
+  const { data: candidatos, error: errorFuzzy } = await supabase.rpc('fn_buscar_asignatura_similar', {
+    p_plan_estudios_id: planEstudiosId, p_clave: clave, p_umbral: UMBRAL_MINIMO, p_limite: LIMITE_CANDIDATOS,
+  });
+  if (errorFuzzy) throw errorFuzzy;
+
+  const evaluacion = evaluarCandidatos(candidatos);
+
+  if (evaluacion.caso === 'autoaceptar') {
+    mapa.set(clave, evaluacion.elegido.id);
+    return {
+      estado: 'resuelto',
+      id: evaluacion.elegido.id,
+      advertencia:
+        `Curso "${nombreCurso}" → matched como "${evaluacion.elegido.nombre}" ` +
+        `con similitud ${evaluacion.elegido.similitud.toFixed(2)}`,
+    };
+  }
+
+  if (evaluacion.caso === 'ambiguo') {
+    return {
+      estado: 'pendiente',
+      candidatos: evaluacion.candidatos.map((c) => ({ id: c.id, nombre: c.nombre, similitud: c.similitud })),
+    };
+  }
+
+  // sin_candidatos -> crear nuevo (comportamiento actual, sin cambios)
   const esElectivo = /electivo/i.test(nombreCurso);
   const { data: nueva, error } = await supabase
     .from('asignatura')
@@ -140,18 +206,7 @@ async function resolverAsignatura({ planEstudiosId, nombreCurso, cacheAsignatura
     .single();
   if (error) throw error;
   mapa.set(clave, nueva.id);
-  return nueva.id;
-}
-
-// "Vargas Merino, Jorge Alberto" -> { apellido_paterno, apellido_materno, nombres }
-function parsearNombreDocente(nombreCsv) {
-  const [apellidos, nombres] = nombreCsv.split(',').map((s) => s.trim());
-  const [apellidoPaterno, ...restoApellidos] = (apellidos || '').split(/\s+/);
-  return {
-    apellido_paterno: apellidoPaterno || '',
-    apellido_materno: restoApellidos.length ? restoApellidos.join(' ') : null,
-    nombres: nombres || '',
-  };
+  return { estado: 'resuelto', id: nueva.id };
 }
 
 async function resolverDocente({ nombreCsv, cacheDocentes }) {
@@ -165,8 +220,34 @@ async function resolverDocente({ nombreCsv, cacheDocentes }) {
   }
 
   const clave = claveCarga(nombreCsv);
-  if (cacheDocentes.has(clave)) return cacheDocentes.get(clave);
+  if (cacheDocentes.has(clave)) return { estado: 'resuelto', id: cacheDocentes.get(clave) };
 
+  const { data: candidatos, error: errorFuzzy } = await supabase.rpc('fn_buscar_docente_similar', {
+    p_clave: clave, p_umbral: UMBRAL_MINIMO, p_limite: LIMITE_CANDIDATOS,
+  });
+  if (errorFuzzy) throw errorFuzzy;
+
+  const evaluacion = evaluarCandidatos(candidatos);
+
+  if (evaluacion.caso === 'autoaceptar') {
+    cacheDocentes.set(clave, evaluacion.elegido.id);
+    return {
+      estado: 'resuelto',
+      id: evaluacion.elegido.id,
+      advertencia:
+        `Docente "${nombreCsv}" → matched como "${evaluacion.elegido.nombre_completo}" ` +
+        `con similitud ${evaluacion.elegido.similitud.toFixed(2)}`,
+    };
+  }
+
+  if (evaluacion.caso === 'ambiguo') {
+    return {
+      estado: 'pendiente',
+      candidatos: evaluacion.candidatos.map((c) => ({ id: c.id, nombre: c.nombre_completo, similitud: c.similitud })),
+    };
+  }
+
+  // sin_candidatos -> crear nuevo (comportamiento actual, sin cambios)
   const partes = parsearNombreDocente(nombreCsv);
   const { data: nuevo, error } = await supabase
     .from('docente')
@@ -175,7 +256,7 @@ async function resolverDocente({ nombreCsv, cacheDocentes }) {
     .single();
   if (error) throw error;
   cacheDocentes.set(clave, nuevo.id);
-  return nuevo.id;
+  return { estado: 'resuelto', id: nuevo.id };
 }
 
 // Regla de es_carga_oficial (aprobada tras revisar fn_autoconsolidar_secciones,
@@ -309,7 +390,10 @@ const CODIGOS_PREGUNTA = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9'];
 // Construye las 9 filas de `respuesta` para una encuesta ya insertada.
 // Lanza si algún valor numérico del CSV no es parseable (en vez de mandar
 // NaN a la BD, que rompería el check constraint de forma menos legible).
-function construirRespuestas({ encuestaId, fila, catalogos }) {
+// Exportada: la reutiliza también importarEncuestasVirtual.js (misma forma
+// de fila {P1..P9} y de catálogos {preguntaPorCodigo, tipoPorEscalaId,
+// opcionPorEtiqueta}), sin duplicar la lógica de NUMERICA vs. categórica.
+export function construirRespuestas({ encuestaId, fila, catalogos }) {
   return CODIGOS_PREGUNTA.map((codigoPregunta) => {
     const pregunta = catalogos.preguntaPorCodigo.get(codigoPregunta);
     // tipoPorEscalaId viene de un SELECT real a escala.tipo (ver
@@ -348,126 +432,371 @@ function construirRespuestas({ encuestaId, fila, catalogos }) {
 }
 
 // ============================================================
+// Procesa UNA fila del CSV presencial hasta insertarla (o hasta detectar
+// que debe quedar pendiente/omitida). Extraída de importarFilasCsv para
+// que el endpoint de resolución de pendientes pueda re-ejecutar exactamente
+// el mismo camino de inserción sobre una fila guardada en
+// carga_pendiente.fila_completa, sin duplicar esta lógica.
+//
+// overrides.docenteId / overrides.asignaturaId: cuando vienen seteados
+// (resolución de un pendiente ya decidido por un humano), se SALTAN
+// resolverDocente()/resolverAsignatura() para ese campo — no tiene sentido
+// volver a correr el fuzzy matcher sobre un dato que ya se decidió.
+//
+// Devuelve:
+//   { resultado: 'insertada', advertencias: string[] }
+//   { resultado: 'omitida', mensaje }
+//   { resultado: 'pendiente', pendientes: [{ tipo, valorCsv, candidatos }] }
+// Lanza en caso de error real (fila descartable, ver caller).
+export async function procesarFila({ fila, periodo, campaniaId, cargaId, contexto, overrides = {} }) {
+  const { catalogos, cachePlanes, cacheAsignaturas, cacheDocentes, cacheEncuestados } = contexto;
+
+  const claveProgramaCsv = normalizarTexto(fila.Programa);
+  const programaId = catalogos.programaIdPorEtiqueta.get(claveProgramaCsv);
+  if (!programaId) {
+    throw new Error(`Programa no reconocido en staging.map_programa: "${fila.Programa}"`);
+  }
+
+  if (!cachePlanes.has(programaId)) {
+    const planId = await resolverPlanEstudios(programaId, periodo.anio);
+    if (!planId) throw new Error(`Sin plan de estudios activo para el programa "${fila.Programa}"`);
+    cachePlanes.set(programaId, planId);
+  }
+
+  const ciclo = cicloDesdeRomano(fila.Ciclo);
+  const seccion = parseInt(fila.Seccion, 10);
+  if (!ciclo || Number.isNaN(seccion)) {
+    throw new Error(`Ciclo/Sección inválidos: "${fila.Ciclo}" / "${fila.Seccion}"`);
+  }
+
+  const grupo = await resolverGrupo({
+    periodoId: periodo.id,
+    programaId,
+    planEstudiosIdCalculado: cachePlanes.get(programaId),
+    ciclo,
+    seccion,
+    modalidadDefectoId: catalogos.modalidadDefectoId,
+  });
+
+  // Se usa el plan_estudios_id real del grupo (no el recién calculado):
+  // si el grupo ya existía, pudo haberse creado con un plan distinto.
+  const asignaturaResultado = overrides.asignaturaId
+    ? { estado: 'resuelto', id: overrides.asignaturaId }
+    : await resolverAsignatura({ planEstudiosId: grupo.plan_estudios_id, nombreCurso: fila.Curso, cacheAsignaturas });
+
+  const docenteResultado = overrides.docenteId
+    ? { estado: 'resuelto', id: overrides.docenteId }
+    : await resolverDocente({ nombreCsv: fila.Docente, cacheDocentes });
+
+  const pendientes = [];
+  if (asignaturaResultado.estado === 'pendiente') {
+    pendientes.push({ tipo: 'asignatura', valorCsv: fila.Curso, candidatos: asignaturaResultado.candidatos });
+  }
+  if (docenteResultado.estado === 'pendiente') {
+    pendientes.push({ tipo: 'docente', valorCsv: fila.Docente, candidatos: docenteResultado.candidatos });
+  }
+  if (pendientes.length > 0) {
+    return { resultado: 'pendiente', pendientes };
+  }
+
+  const advertenciasFila = [];
+  if (asignaturaResultado.advertencia) advertenciasFila.push(asignaturaResultado.advertencia);
+  if (docenteResultado.advertencia) advertenciasFila.push(docenteResultado.advertencia);
+
+  const cgd = await resolverCursoGrupoDocente({
+    grupoId: grupo.id,
+    asignaturaId: asignaturaResultado.id,
+    docenteId: docenteResultado.id,
+    nombreDocenteCsv: fila.Docente,
+    nombreCurso: fila.Curso,
+  });
+  if (cgd.advertencia) advertenciasFila.push(cgd.advertencia);
+
+  const encuestadoId = await resolverEncuestado({
+    campaniaId,
+    grupoId: grupo.id,
+    codigo: fila.Codigo,
+    cargaId,
+    cacheEncuestados,
+  });
+
+  // Dentro del mismo archivo: si la fila está literalmente repetida
+  // (mismo encuestado + mismo dictado), se omite en vez de duplicar.
+  const { data: encuestaExistente, error: errorBusquedaEncuesta } = await supabase
+    .from('encuesta')
+    .select('id')
+    .eq('encuestado_id', encuestadoId)
+    .eq('curso_grupo_docente_id', cgd.id)
+    .maybeSingle();
+  if (errorBusquedaEncuesta) throw errorBusquedaEncuesta;
+  if (encuestaExistente) {
+    return { resultado: 'omitida', mensaje: 'Fila duplicada dentro del mismo archivo — omitida.' };
+  }
+
+  const { data: encuesta, error: errorEncuesta } = await supabase
+    .from('encuesta')
+    .insert({ encuestado_id: encuestadoId, curso_grupo_docente_id: cgd.id, carga_id: cargaId })
+    .select('id')
+    .single();
+  if (errorEncuesta) throw errorEncuesta;
+
+  // Insert atómico POR FILA (no un batch acumulado al final de todas
+  // las filas del CSV): las 9 respuestas se insertan junto con su
+  // encuesta, dentro del mismo try/catch, y si esto falla se hace
+  // rollback manual de la encuesta recién creada. Si en cambio se
+  // acumularan las respuestas de las N filas en un array y se
+  // insertaran todas juntas al final, una fila con datos inválidos más
+  // adelante en el archivo haría fallar el insert completo o dejaría
+  // huérfanas (sin sus 9 respuestas) a todas las encuestas de filas
+  // anteriores ya insertadas — rompiendo el invariante 1 encuesta = 9
+  // respuestas para el resto del archivo, no solo para la fila mala.
+  try {
+    const filasRespuesta = construirRespuestas({ encuestaId: encuesta.id, fila, catalogos });
+    const { error: errorRespuestas } = await supabase.from('respuesta').insert(filasRespuesta);
+    if (errorRespuestas) throw errorRespuestas;
+  } catch (errRespuestas) {
+    await supabase.from('encuesta').delete().eq('id', encuesta.id);
+    throw errRespuestas;
+  }
+
+  return { resultado: 'insertada', advertencias: advertenciasFila };
+}
+
+// ============================================================
 // Punto de entrada: procesa todas las filas del CSV parseado.
-// Devuelve { filasInsertadas, errores, omitidas, advertencias }.
+// Devuelve { filasInsertadas, errores, omitidas, advertencias, filasPendientes }.
 // ============================================================
 export async function importarFilasCsv(filas, periodo, campaniaId, cargaId) {
-  const catalogos = await cargarCatalogos();
-
-  const cachePlanes = new Map();
-  const cacheAsignaturas = new Map();
-  const cacheDocentes = new Map();
-  const cacheEncuestados = new Map();
+  const contexto = await crearContextoImportacion();
 
   const errores = [];
   const omitidas = [];
   const advertencias = [];
   let filasInsertadas = 0;
+  let filasPendientes = 0;
 
   for (let i = 0; i < filas.length; i++) {
     const fila = filas[i];
     const numeroFila = i + 2;
 
     try {
-      const claveProgramaCsv = normalizarTexto(fila.Programa);
-      const programaId = catalogos.programaIdPorEtiqueta.get(claveProgramaCsv);
-      if (!programaId) {
-        throw new Error(`Programa no reconocido en staging.map_programa: "${fila.Programa}"`);
-      }
+      const resultado = await procesarFila({ fila, periodo, campaniaId, cargaId, contexto });
 
-      if (!cachePlanes.has(programaId)) {
-        const planId = await resolverPlanEstudios(programaId, periodo.anio);
-        if (!planId) throw new Error(`Sin plan de estudios activo para el programa "${fila.Programa}"`);
-        cachePlanes.set(programaId, planId);
-      }
-
-      const ciclo = cicloDesdeRomano(fila.Ciclo);
-      const seccion = parseInt(fila.Seccion, 10);
-      if (!ciclo || Number.isNaN(seccion)) {
-        throw new Error(`Ciclo/Sección inválidos: "${fila.Ciclo}" / "${fila.Seccion}"`);
-      }
-
-      const grupo = await resolverGrupo({
-        periodoId: periodo.id,
-        programaId,
-        planEstudiosIdCalculado: cachePlanes.get(programaId),
-        ciclo,
-        seccion,
-        modalidadDefectoId: catalogos.modalidadDefectoId,
-      });
-
-      // Se usa el plan_estudios_id real del grupo (no el recién calculado):
-      // si el grupo ya existía, pudo haberse creado con un plan distinto.
-      const asignaturaId = await resolverAsignatura({
-        planEstudiosId: grupo.plan_estudios_id,
-        nombreCurso: fila.Curso,
-        cacheAsignaturas,
-      });
-
-      const docenteId = await resolverDocente({ nombreCsv: fila.Docente, cacheDocentes });
-
-      const cgd = await resolverCursoGrupoDocente({
-        grupoId: grupo.id,
-        asignaturaId,
-        docenteId,
-        nombreDocenteCsv: fila.Docente,
-        nombreCurso: fila.Curso,
-      });
-      if (cgd.advertencia) advertencias.push({ fila: numeroFila, mensaje: cgd.advertencia });
-
-      const encuestadoId = await resolverEncuestado({
-        campaniaId,
-        grupoId: grupo.id,
-        codigo: fila.Codigo,
-        cargaId,
-        cacheEncuestados,
-      });
-
-      // Dentro del mismo archivo: si la fila está literalmente repetida
-      // (mismo encuestado + mismo dictado), se omite en vez de duplicar.
-      const { data: encuestaExistente, error: errorBusquedaEncuesta } = await supabase
-        .from('encuesta')
-        .select('id')
-        .eq('encuestado_id', encuestadoId)
-        .eq('curso_grupo_docente_id', cgd.id)
-        .maybeSingle();
-      if (errorBusquedaEncuesta) throw errorBusquedaEncuesta;
-      if (encuestaExistente) {
-        omitidas.push({ fila: numeroFila, mensaje: 'Fila duplicada dentro del mismo archivo — omitida.' });
+      if (resultado.resultado === 'pendiente') {
+        for (const p of resultado.pendientes) {
+          const { error: errorPendiente } = await supabase.from('carga_pendiente').insert({
+            carga_id: cargaId,
+            fila_numero: numeroFila,
+            tipo: p.tipo,
+            valor_csv: p.valorCsv,
+            fila_completa: fila,
+            candidatos: p.candidatos,
+          });
+          if (errorPendiente) throw errorPendiente;
+        }
+        filasPendientes++;
         continue;
       }
 
-      const { data: encuesta, error: errorEncuesta } = await supabase
-        .from('encuesta')
-        .insert({ encuestado_id: encuestadoId, curso_grupo_docente_id: cgd.id, carga_id: cargaId })
-        .select('id')
-        .single();
-      if (errorEncuesta) throw errorEncuesta;
-
-      // Insert atómico POR FILA (no un batch acumulado al final de todas
-      // las filas del CSV): las 9 respuestas se insertan junto con su
-      // encuesta, dentro del mismo try/catch, y si esto falla se hace
-      // rollback manual de la encuesta recién creada. Si en cambio se
-      // acumularan las respuestas de las N filas en un array y se
-      // insertaran todas juntas al final, una fila con datos inválidos más
-      // adelante en el archivo haría fallar el insert completo o dejaría
-      // huérfanas (sin sus 9 respuestas) a todas las encuestas de filas
-      // anteriores ya insertadas — rompiendo el invariante 1 encuesta = 9
-      // respuestas para el resto del archivo, no solo para la fila mala.
-      try {
-        const filasRespuesta = construirRespuestas({ encuestaId: encuesta.id, fila, catalogos });
-        const { error: errorRespuestas } = await supabase.from('respuesta').insert(filasRespuesta);
-        if (errorRespuestas) throw errorRespuestas;
-      } catch (errRespuestas) {
-        await supabase.from('encuesta').delete().eq('id', encuesta.id);
-        throw errRespuestas;
+      if (resultado.resultado === 'omitida') {
+        omitidas.push({ fila: numeroFila, mensaje: resultado.mensaje });
+        continue;
       }
 
+      resultado.advertencias.forEach((mensaje) => advertencias.push({ fila: numeroFila, mensaje }));
       filasInsertadas++;
     } catch (err) {
       errores.push({ fila: numeroFila, mensaje: err.message });
     }
   }
 
-  return { filasInsertadas, errores, omitidas, advertencias };
+  return { filasInsertadas, errores, omitidas, advertencias, filasPendientes };
+}
+
+// ============================================================
+// Resolución de UN carga_pendiente (POST /api/cargas/pendientes/:id/resolver).
+// Devuelve { estado, ... } — el controlador solo traduce a códigos HTTP.
+// ============================================================
+export async function resolverPendiente(pendienteId, { accion, docenteId, asignaturaId }) {
+  const { data: pendiente, error: errorPendiente } = await supabase
+    .from('carga_pendiente')
+    .select('*')
+    .eq('id', pendienteId)
+    .maybeSingle();
+  if (errorPendiente) throw errorPendiente;
+  if (!pendiente) return { estado: 'no_encontrado' };
+  if (pendiente.estado !== 'pendiente') return { estado: 'ya_resuelto', pendiente };
+
+  let resueltoComoId = null;
+
+  if (accion === 'usar_existente') {
+    resueltoComoId = pendiente.tipo === 'docente' ? docenteId : asignaturaId;
+    if (!resueltoComoId) return { estado: 'falta_id' };
+    const tabla = pendiente.tipo === 'docente' ? 'docente' : 'asignatura';
+    const { data: existe, error: errorExiste } = await supabase.from(tabla).select('id').eq('id', resueltoComoId).maybeSingle();
+    if (errorExiste) throw errorExiste;
+    if (!existe) return { estado: 'referencia_no_encontrada' };
+  } else if (accion === 'crear_nuevo') {
+    resueltoComoId = await crearDesdeCandidatoDescartado(pendiente);
+  } else if (accion === 'descartar') {
+    resueltoComoId = null;
+  } else {
+    return { estado: 'accion_invalida' };
+  }
+
+  const nuevoEstado = accion === 'descartar' ? 'descartada' : 'resuelta';
+  const { error: errorUpdate } = await supabase
+    .from('carga_pendiente')
+    .update({ estado: nuevoEstado, resuelto_como_id: resueltoComoId, resuelto_en: new Date().toISOString() })
+    .eq('id', pendienteId);
+  if (errorUpdate) throw errorUpdate;
+
+  await ajustarContadorPendientes(pendiente.carga_id, -1);
+
+  // ¿Quedan otros pendientes (estado='pendiente') para esta misma fila?
+  // Una fila puede tener 2 (docente Y asignatura ambiguos a la vez) — no se
+  // inserta hasta que TODOS estén resueltos/descartados.
+  const { data: otrosPendientes, error: errorOtros } = await supabase
+    .from('carga_pendiente')
+    .select('id')
+    .eq('carga_id', pendiente.carga_id)
+    .eq('fila_numero', pendiente.fila_numero)
+    .eq('estado', 'pendiente');
+  if (errorOtros) throw errorOtros;
+
+  if (otrosPendientes && otrosPendientes.length > 0) {
+    return { estado: 'resuelto_parcial', pendiente, resueltoComoId };
+  }
+
+  // Última pieza resuelta para esta fila -> reintentar la inserción.
+  const { data: todosLosDeLaFila, error: errorTodos } = await supabase
+    .from('carga_pendiente')
+    .select('*')
+    .eq('carga_id', pendiente.carga_id)
+    .eq('fila_numero', pendiente.fila_numero);
+  if (errorTodos) throw errorTodos;
+
+  if (todosLosDeLaFila.some((p) => p.estado === 'descartada')) {
+    // Al menos un dato de la fila se descartó -> nunca se puede insertar.
+    return { estado: 'fila_descartada', pendiente, resueltoComoId };
+  }
+
+  const overrides = {};
+  todosLosDeLaFila.forEach((p) => {
+    if (p.tipo === 'docente') overrides.docenteId = p.resuelto_como_id;
+    if (p.tipo === 'asignatura') overrides.asignaturaId = p.resuelto_como_id;
+  });
+
+  const { data: carga, error: errorCarga } = await supabase
+    .from('carga_csv')
+    .select('id, campania_id')
+    .eq('id', pendiente.carga_id)
+    .single();
+  if (errorCarga) throw errorCarga;
+
+  const { data: campania, error: errorCampania } = await supabase
+    .from('campania_evaluacion')
+    .select('periodo_academico_id')
+    .eq('id', carga.campania_id)
+    .single();
+  if (errorCampania) throw errorCampania;
+
+  const { data: periodo, error: errorPeriodo } = await supabase
+    .from('periodo_academico')
+    .select('id, anio')
+    .eq('id', campania.periodo_academico_id)
+    .single();
+  if (errorPeriodo) throw errorPeriodo;
+
+  const contexto = await crearContextoImportacion();
+
+  try {
+    const resultadoFila = await procesarFila({
+      fila: pendiente.fila_completa,
+      periodo,
+      campaniaId: carga.campania_id,
+      cargaId: carga.id,
+      contexto,
+      overrides,
+    });
+
+    if (resultadoFila.resultado === 'insertada') {
+      await ajustarContadorInsertadas(carga.id, 1);
+      return { estado: 'fila_insertada', pendiente, resueltoComoId };
+    }
+    // 'omitida' (duplicado dentro del archivo, detectado recién ahora)
+    return { estado: 'fila_omitida', pendiente, resueltoComoId, mensaje: resultadoFila.mensaje };
+  } catch (err) {
+    return { estado: 'fila_error', pendiente, resueltoComoId, mensaje: err.message };
+  }
+}
+
+// "Crear como nuevo" desde un pendiente: mismo alta que el camino "sin
+// candidatos" de resolverDocente()/resolverAsignatura(), pero forzado por
+// decisión humana en vez de automático. Para asignatura hace falta
+// re-derivar plan_estudios_id desde fila_completa (Programa/Ciclo/Sección):
+// el grupo ya existe a esta altura (se creó en la corrida original, ANTES
+// de llegar a resolver docente/asignatura), así que resolverGrupo() solo lo
+// encuentra, no lo duplica.
+async function crearDesdeCandidatoDescartado(pendiente) {
+  if (pendiente.tipo === 'docente') {
+    const partes = parsearNombreDocente(pendiente.valor_csv);
+    const { data: nuevo, error } = await supabase
+      .from('docente')
+      .insert({ ...partes, en_roster_encuestas: true })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return nuevo.id;
+  }
+
+  const fila = pendiente.fila_completa;
+  const claveProgramaCsv = normalizarTexto(fila.Programa);
+  const { data: mapaPrograma, error: errorMapa } = await supabase
+    .schema('staging')
+    .from('map_programa')
+    .select('programa_codigo')
+    .eq('etiqueta_origen', fila.Programa)
+    .maybeSingle();
+  if (errorMapa) throw errorMapa;
+  if (!mapaPrograma) throw new Error(`Programa no reconocido en staging.map_programa: "${fila.Programa}" (clave normalizada "${claveProgramaCsv}")`);
+
+  const { data: programa, error: errorPrograma } = await supabase
+    .from('programa')
+    .select('id')
+    .eq('codigo', mapaPrograma.programa_codigo)
+    .single();
+  if (errorPrograma) throw errorPrograma;
+
+  const ciclo = cicloDesdeRomano(fila.Ciclo);
+  const seccion = parseInt(fila.Seccion, 10);
+  const { data: grupo, error: errorGrupo } = await supabase
+    .from('grupo')
+    .select('plan_estudios_id')
+    .eq('programa_id', programa.id)
+    .eq('ciclo', ciclo)
+    .eq('seccion', seccion)
+    .single();
+  if (errorGrupo) throw errorGrupo;
+
+  const esElectivo = /electivo/i.test(pendiente.valor_csv);
+  const { data: nueva, error } = await supabase
+    .from('asignatura')
+    .insert({ plan_estudios_id: grupo.plan_estudios_id, nombre: pendiente.valor_csv.trim(), es_electivo: esElectivo })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return nueva.id;
+}
+
+async function ajustarContadorPendientes(cargaId, delta) {
+  const { data: carga, error } = await supabase.from('carga_csv').select('filas_pendientes').eq('id', cargaId).single();
+  if (error) throw error;
+  await supabase.from('carga_csv').update({ filas_pendientes: Math.max(0, carga.filas_pendientes + delta) }).eq('id', cargaId);
+}
+
+async function ajustarContadorInsertadas(cargaId, delta) {
+  const { data: carga, error } = await supabase.from('carga_csv').select('filas_insertadas').eq('id', cargaId).single();
+  if (error) throw error;
+  await supabase.from('carga_csv').update({ filas_insertadas: carga.filas_insertadas + delta }).eq('id', cargaId);
 }
