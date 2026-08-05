@@ -7,9 +7,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
    se refleja de inmediato en el reporte, igual que Resumen General — sin
    capa de borrador/aplicado.
 
-   NOTA: el filtro de Estado (Aprobado >= 14 / Desaprobado < 14) sólo acota
-   qué DOCENTES aparecen en el dropdown; no filtra las filas ya mostradas
-   del docente seleccionado. Ver
+   NOTA: el filtro de Estado (Aprobado/Desaprobado, corte en
+   politica_evaluacion.umbral_aprobacion — ver lib/stats.js) sólo acota qué
+   DOCENTES aparecen en el dropdown; no filtra las filas ya mostradas del
+   docente seleccionado. Ver
    docs/superpowers/specs/2026-07-23-filtros-compartidos-design.md */
 
 const GK_SEP = '|||';

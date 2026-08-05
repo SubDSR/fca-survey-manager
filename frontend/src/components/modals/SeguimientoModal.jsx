@@ -8,15 +8,18 @@ import styles from './SeguimientoModal.module.css';
    levanta STATE.docente.* equivalente (programa/categoria/estado/selected/curso),
    cierra el modal y cambia a la vista Docente — ver hooks/useDocenteSelection.js. */
 
-export default function SeguimientoModal({ open, onClose, groups, onVerDetalle }) {
+export default function SeguimientoModal({ open, onClose, groups, onVerDetalle, politica }) {
   const items = groups || [];
+  const subtitle = politica
+    ? `Se marcan aquí los grupos docente/curso con nota Dim. I menor a ${politica.umbral_aprobacion}, o con ${politica.umbral_seguimiento_pct_no}% o más de respuestas "No" en el cumplimiento de directivas.`
+    : undefined;
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Docentes que requieren seguimiento"
-      subtitle='Se marcan aquí los grupos docente/curso con nota Dim. I menor a 11, o con 30% o más de respuestas "No" en el cumplimiento de directivas.'
+      subtitle={subtitle}
     >
       {items.length === 0 ? (
         <div className={styles.modalEmpty}>No hay docentes en seguimiento para los filtros activos.</div>
@@ -41,13 +44,13 @@ export default function SeguimientoModal({ open, onClose, groups, onVerDetalle }
             </div>
             <div className={styles.seguimientoMetrics}>
               <div>
-                <div className={g.nota < 11 ? `${styles.metricValue} ${styles.bad}` : styles.metricValue}>
+                <div className={g.nota < politica.umbral_aprobacion ? `${styles.metricValue} ${styles.bad}` : styles.metricValue}>
                   {g.nota.toFixed(1)}
                 </div>
                 <div className={styles.metricLabel}>Nota Dim I</div>
               </div>
               <div>
-                <div className={g.pctNo >= 30 ? `${styles.metricValue} ${styles.bad}` : styles.metricValue}>
+                <div className={g.pctNo >= politica.umbral_seguimiento_pct_no ? `${styles.metricValue} ${styles.bad}` : styles.metricValue}>
                   {Math.round(g.pctNo)}%
                 </div>
                 <div className={styles.metricLabel}>% de "No"</div>

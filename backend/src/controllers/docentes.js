@@ -225,12 +225,24 @@ export async function listarCatalogosDocente(req, res) {
 // activo completo). Consulta directa en vez de una vista: es un solo
 // número, no hace falta materializarlo como vista de reportes.
 async function calcularPromedioActual(docenteId) {
+  // Mismo criterio de exclusión que las vistas v_encuesta_* (ver migración
+  // 2026-08-04-excluir-revisiones-pendientes.sql): una asignación docente-
+  // curso sin respaldo oficial, mientras esté 'pendiente' o 'descartada' en
+  // revision_asignacion, no debe ensuciar el promedio. Se replica acá porque
+  // esta función consulta directo contra `respuesta`/`encuesta`, no una vista.
+  const { data: pendientes } = await supabase
+    .from('revision_asignacion')
+    .select('curso_grupo_docente_id')
+    .in('estado', ['pendiente', 'descartada']);
+  const idsExcluidos = new Set((pendientes || []).map((r) => r.curso_grupo_docente_id));
+
   const { data, error } = await supabase
     .from('respuesta')
     .select(`
       valor_numerico,
       encuesta:encuesta_id!inner(
         carga_id,
+        curso_grupo_docente_id,
         carga_csv:carga_id(visible),
         curso_grupo_docente:curso_grupo_docente_id!inner(
           docente_id,
@@ -253,7 +265,8 @@ async function calcularPromedioActual(docenteId) {
   // (heredada) siempre cuenta; con carga_id, solo si esa carga es visible.
   const respuestas = data.filter((r) => {
     const carga = r.encuesta?.carga_id;
-    return carga === null || r.encuesta?.carga_csv?.visible === true;
+    const cargaOk = carga === null || r.encuesta?.carga_csv?.visible === true;
+    return cargaOk && !idsExcluidos.has(r.encuesta?.curso_grupo_docente_id);
   });
 
   if (respuestas.length === 0) return 0;

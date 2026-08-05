@@ -3,6 +3,7 @@ import { Plus, Search, UserX, UserCheck, Loader2, AlertCircle } from 'lucide-rea
 import Modal from '../../common/Modal.jsx';
 import EntityCard from '../shared/EntityCard.jsx';
 import CatalogHeader from '../shared/CatalogHeader.jsx';
+import HistoryModal from '../shared/HistoryModal.jsx';
 import Pagination from '../shared/Pagination.jsx';
 import { usePagination } from '../shared/usePagination.js';
 import { useEntityCrud } from '../shared/useEntityCrud.js';
@@ -59,6 +60,9 @@ export default function DocentesTab() {
   }, []);
 
   const { page, setPage, totalPages, pageItems } = usePagination(items, PAGE_SIZE, [search, activoFilter, extraFilters]);
+
+  // ---- Historial de cambios (⋮ de cada card) ----
+  const [historyTarget, setHistoryTarget] = useState(null);
 
   // ---- Modal alta/edición ----
   const [formOpen, setFormOpen] = useState(false);
@@ -210,6 +214,7 @@ export default function DocentesTab() {
                 onToggleActive={() => setConfirmTarget(d)}
                 toggleActiveLabel={d.activo ? 'Suspender' : 'Reactivar'}
                 ToggleIcon={d.activo ? UserX : UserCheck}
+                onShowHistory={() => setHistoryTarget(d)}
               />
             ))}
           </div>
@@ -409,6 +414,13 @@ export default function DocentesTab() {
           </>
         )}
       </Modal>
+
+      <HistoryModal
+        tabla="docente"
+        target={historyTarget}
+        subtitle={historyTarget?.nombre_completo}
+        onClose={() => setHistoryTarget(null)}
+      />
     </div>
   );
 }

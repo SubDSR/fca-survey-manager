@@ -95,7 +95,11 @@ export function weightedNotaPromedio(rows) {
   return rows.reduce((a, r) => a + r.notaFinal * r.n, 0) / totalN;
 }
 
-export function classifyDocentesByEstado(rows) {
+// umbralAprobacion viene de politica_evaluacion.umbral_aprobacion (GET
+// /api/politica-evaluacion vía DataContext) -- ya no hay un 14 hardcodeado
+// acá, es el mismo número que usa v_seguimiento/v_encuesta_nota en el
+// backend (ver migración 2026-08-04-unificar-umbral-seguimiento-nota.sql).
+export function classifyDocentesByEstado(rows, umbralAprobacion) {
   const byDocente = new Map();
   rows.forEach((r) => {
     if (!byDocente.has(r.docente)) byDocente.set(r.docente, []);
@@ -103,19 +107,19 @@ export function classifyDocentesByEstado(rows) {
   });
   const result = new Map();
   byDocente.forEach((docenteRows, docente) => {
-    result.set(docente, weightedNotaPromedio(docenteRows) >= 14 ? 'aprobado' : 'desaprobado');
+    result.set(docente, weightedNotaPromedio(docenteRows) >= umbralAprobacion ? 'aprobado' : 'desaprobado');
   });
   return result;
 }
 
-export function computeDocenteVsPrograma(cursoRows, programaRows) {
+export function computeDocenteVsPrograma(cursoRows, programaRows, umbralAprobacion) {
   const notaDocente = weightedNotaPromedio(cursoRows);
   const notaPrograma = weightedNotaPromedio(programaRows);
   return {
     notaDocente,
     notaPrograma,
     delta: notaDocente - notaPrograma,
-    aprobado: notaDocente >= 14,
+    aprobado: notaDocente >= umbralAprobacion,
     n: cursoRows.reduce((a, r) => a + (r.n || 0), 0),
   };
 }

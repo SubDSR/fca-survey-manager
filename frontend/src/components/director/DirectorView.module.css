@@ -30,3 +30,55 @@
   background: #ecfdf5; color: #059669; border-color: #a7f3d0; box-shadow: none;
 }
 .excelBtn:hover { background: #d1fae5; border-color: #34d399; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15); color: #047857; }
+
+/* Panel "Docentes en seguimiento" (SeguimientoDocentesCard.jsx) */
+.seguimientoCard { margin-top: 16px; }
+
+.spin { animation: seguimientoSpin 0.8s linear infinite; }
+@keyframes seguimientoSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.seguimientoLoading {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 4px; color: var(--text-soft); font-size: 13px;
+}
+
+.seguimientoEmpty {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 4px; color: #1e6b39; font-size: 13.5px; font-weight: 600;
+}
+.seguimientoEmptyIcon { color: var(--green); flex: none; }
+
+.seguimientoList { list-style: none; margin: 0; padding: 0; }
+
+.seguimientoRow {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 4px; border-bottom: 1px solid var(--border);
+}
+.seguimientoRow:last-child { border-bottom: none; }
+
+.seguimientoRowClickable { cursor: pointer; border-radius: 6px; }
+.seguimientoRowClickable:hover { background: var(--bg); }
+
+.seguimientoBadge {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em;
+  padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+}
+.seguimientoBadgeCritico { background: var(--red-bg); color: var(--red); }
+.seguimientoBadgeAdvertencia { background: var(--yellow-bg); color: #8a6d00; }
+
+.seguimientoNombre {
+  flex: 1 1 220px; min-width: 0; font-size: 13.5px; font-weight: 700; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.seguimientoMetric {
+  flex: none; font-size: 12.5px; color: var(--text-soft); white-space: nowrap;
+}
+.seguimientoMetric b { color: var(--text); font-weight: 700; }
+
+.seguimientoVerTodos {
+  display: block; margin-top: 8px; background: none; border: none; padding: 6px 4px;
+  color: #7A1A2F; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.seguimientoVerTodos:hover { text-decoration: underline; }

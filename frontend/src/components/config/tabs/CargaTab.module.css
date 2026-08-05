@@ -1,0 +1,1126 @@
+.pageHeader {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 13px;
+  color: #9a9a94;
+  margin-bottom: 4px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 68% 32%;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leftCol,
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* Botón outline "+ Nuevo período" -- pill blanco/borde maroon, no relleno
+   sólido (corrige el estilo sólido de la ronda anterior contra el .dc.html
+   real: background:#fff;border:1px solid #9C1F06;color:#9C1F06). */
+.pillBtnOutline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #9c1f06;
+  border: 1px solid #9c1f06;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pillBtnOutline:hover {
+  background: #fbeceb;
+}
+
+.periodSelectorRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.periodSelectorRow select {
+  flex: 1;
+  appearance: none;
+  border: 1px solid #e5e3df;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236b6b66' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;
+  cursor: pointer;
+  outline: none;
+}
+
+.periodSelectorRow select:hover {
+  border-color: #c9c7c1;
+}
+
+.linkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #9c1f06;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+/* Bloque 2: ¿Qué deseas hacer? -- cards de fondo tintado claro (no relleno
+   sólido), cada una con un botón/acción al pie -- corrige el estilo sólido
+   de la ronda anterior. */
+.actionCards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.actionCard {
+  position: relative;
+  flex: 1;
+  min-width: 230px;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.actionCardCsv {
+  background: #fbeceb;
+  border: 1px solid #f3d9d0;
+}
+
+.actionCardFisica {
+  background: #eaf5ee;
+  border: 1px solid #cfe8d9;
+}
+
+.actionCardVirtual {
+  background: #eaf2fb;
+  border: 1px solid #d3e6f7;
+}
+
+.actionCardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.actionCardCsv .actionCardTitle,
+.actionCardCsv .actionCardIcon {
+  color: #9c1f06;
+}
+
+.actionCardFisica .actionCardTitle,
+.actionCardFisica .actionCardIcon {
+  color: #1e6b39;
+}
+
+.actionCardVirtual .actionCardTitle,
+.actionCardVirtual .actionCardIcon {
+  color: #2f6fb0;
+}
+
+.actionCardText {
+  font-size: 13px;
+  color: #6b6b66;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+}
+
+.actionCardBtn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.actionCardBtnCsv {
+  background: #9c1f06;
+  color: #fff;
+}
+
+.actionCardBtnCsv:hover {
+  background: #7d1905;
+}
+
+.actionCardBtnFisica {
+  background: #1e6b39;
+  color: #fff;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actionCardBtnVirtual {
+  background: #fff;
+  border: 1.5px solid #2f6fb0;
+  color: #2f6fb0;
+  cursor: pointer;
+}
+
+.actionCardBtnVirtual:hover {
+  background: #eaf2fb;
+}
+
+.comingSoonBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.actionCardFisica .comingSoonBadge {
+  color: #1e6b39;
+}
+
+.actionCardVirtual .comingSoonBadge {
+  color: #2f6fb0;
+}
+
+/* Bloque 3: plantillas -- cards planas (sin tinte), formato requerido +
+   link de descarga con ícono, igual que el .dc.html real. */
+.templateCards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.templateCard {
+  flex: 1;
+  min-width: 230px;
+  border: 1px solid #e5e3df;
+  border-radius: 14px;
+  padding: 18px;
+  position: relative;
+}
+
+.templateCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.templateCardText {
+  font-size: 13px;
+  color: #6b6b66;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.templateCardLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.templateCardLinkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.templateCardLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #1e6b39;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.templateCardLink:hover {
+  text-decoration: underline;
+}
+
+.templateCardLinkDisabled {
+  color: #9a9a94;
+  cursor: not-allowed;
+}
+
+.templateCardLinkDisabled:hover {
+  text-decoration: none;
+}
+
+.templateCardCaption {
+  font-size: 12px;
+  color: #9a9a94;
+}
+
+/* Columna derecha: Estado del período */
+.stateCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stateCalendarIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #fbeceb;
+  color: #9c1f06;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stateHeaderLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stateHeaderLabel span:first-child {
+  font-size: 13px;
+  color: #6b6b66;
+}
+
+.periodBigCode {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.periodDatesCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.periodDatesCol div {
+  font-size: 13px;
+  color: #6b6b66;
+}
+
+.periodDatesCol b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.allPeriodsWrap {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  border-top: 1px solid #f0efec;
+}
+
+.periodListRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0efec;
+}
+
+.periodListRow:last-child {
+  border-bottom: none;
+}
+
+.periodListInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.periodListNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.periodListName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.periodListDates {
+  font-size: 12px;
+  color: #9a9a94;
+  margin-top: 2px;
+}
+
+.periodListActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.iconBtnSmall {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e5e3df;
+  background: #fff;
+  color: #6b6b66;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.iconBtnSmall:hover:not(:disabled) {
+  background: #f7f7f5;
+}
+
+.iconBtnSmall:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.iconBtnSmallDanger {
+  border-color: #f3d9d0;
+  color: #9c1f06;
+}
+
+.iconBtnSmallDanger:hover:not(:disabled) {
+  background: #fbeceb;
+}
+
+/* Historial de cargas */
+.historyHeaderRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.historyHeaderRow h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.historyCaption {
+  font-size: 12px;
+  color: #9a9a94;
+  margin-bottom: 12px;
+}
+
+.historyListRow {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0efec;
+}
+
+.historyListRow:last-child {
+  border-bottom: none;
+}
+
+.historyFileIconBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f7f7f5;
+  color: #6b6b66;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.historyListInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.historyListNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.historyListName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.historyBadgeModalidad {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #fbeceb;
+  color: #9c1f06;
+  white-space: nowrap;
+}
+
+.historyBadgeModalidadVirtual {
+  background: #eaf2fb;
+  color: #2f6fb0;
+}
+
+/* Selector de contexto (encuestas virtuales): búsqueda de docente + lista
+   de sus cursos con carga oficial (curso_grupo_docente), hasta fijar el
+   curso_grupo_docente_id que va a recibir todo el archivo. */
+.virtualContextBox {
+  border: 1px solid #d3e6f7;
+  background: #f6faff;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.virtualContextTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.virtualContextHint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b6b66;
+  margin-top: 10px;
+}
+
+.virtualContextHint b {
+  color: var(--text);
+}
+
+.linkBtnInline {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2f6fb0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.linkBtnInline:hover {
+  text-decoration: underline;
+}
+
+.virtualResultList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.virtualResultRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #e5e3df;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.virtualResultRow:hover {
+  border-color: #2f6fb0;
+  background: #f6faff;
+}
+
+.virtualResultCurso {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.virtualResultMeta {
+  font-size: 12px;
+  color: #9a9a94;
+}
+
+.virtualContextBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #eaf2fb;
+  border: 1px solid #d3e6f7;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.historyListMeta {
+  font-size: 12px;
+  color: #9a9a94;
+  margin-top: 2px;
+}
+
+.historyListActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.footerLink {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9c1f06;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
+/* Guía rápida */
+.guiaList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.guiaItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0efec;
+  cursor: default;
+}
+
+.guiaItem:last-child {
+  border-bottom: none;
+}
+
+.guiaIconBox {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f7f7f5;
+  color: #6b6b66;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guiaInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.guiaTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.guiaSubtitle {
+  font-size: 12px;
+  color: #6b6b66;
+  margin-top: 2px;
+}
+
+.guiaChevron {
+  color: #9a9a94;
+  flex-shrink: 0;
+}
+
+/* Páginas dedicadas de subida (SubirCsvPage.jsx / SubirVirtualPage.jsx) */
+.subPageHeader {
+  margin-bottom: 20px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #6b6b66;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.backLink:hover {
+  color: #9c1f06;
+}
+
+.breadcrumb {
+  display: block;
+  font-size: 12px;
+  color: #9a9a94;
+  margin-bottom: 4px;
+}
+
+.activePeriodBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f7f7f5;
+  border: 1px solid #e5e3df;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #6b6b66;
+  margin-bottom: 16px;
+}
+
+.activePeriodBanner b {
+  color: var(--text);
+}
+
+/* Box de contexto reconocido (presencial): resumen del CSV parseado antes
+   de confirmar la carga -- filas/programas/docentes/cursos distintos. */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summaryCard {
+  border: 1px solid #e5e3df;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.summaryIcon {
+  color: #9c1f06;
+  margin-bottom: 6px;
+}
+
+.summaryValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: #6b6b66;
+  margin-top: 2px;
+}
+
+.previewFileRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.previewFileMeta {
+  color: #9a9a94;
+}
+
+/* Estado por fila en la tabla de resultado (post-carga) */
+.rowStatus_error {
+  background: #fdf1ef;
+}
+
+.rowStatus_omitida {
+  background: #f7f7f5;
+}
+
+.rowStatus_pendiente {
+  background: #fdf7ea;
+}
+
+.rowStatus_descartada {
+  background: #f7f7f5;
+}
+
+.rowStatusIconError {
+  color: #9c1f06;
+}
+
+.rowStatusIconOmitida {
+  color: #9a9a94;
+}
+
+.rowStatusIconOk {
+  color: #1e6b39;
+}
+
+.rowStatusIconPendiente {
+  color: #b8860b;
+}
+
+/* Columna de comentarios del CSV virtual: se muestra pero se descarta al
+   guardar -- atenuada para que quede claro que no se persiste. */
+.discardedCell {
+  color: #9a9a94;
+  font-style: italic;
+}
+
+/* Fila pendiente de revisión (fuzzy matching) y sus acciones inline */
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #8a6300;
+  background: #fdf0cf;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.pendingActionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pendingActionBtn {
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid transparent;
+}
+
+.pendingActionBtnCandidato {
+  background: #eaf2fb;
+  border-color: #d3e6f7;
+  color: #2f6fb0;
+}
+
+.pendingActionBtnCandidato:hover {
+  background: #d3e6f7;
+}
+
+.pendingActionBtnNuevo {
+  background: #f7f7f5;
+  border-color: #e5e3df;
+  color: #6b6b66;
+}
+
+.pendingActionBtnNuevo:hover {
+  background: #eeede9;
+}
+
+.pendingActionBtnDescartar {
+  background: #fbeceb;
+  border-color: #f3d9d0;
+  color: #9c1f06;
+}
+
+.pendingActionBtnDescartar:hover {
+  background: #f3d9d0;
+}
+
+.pendingActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sección "1. Información detectada del archivo" (SubirVirtualPage.jsx) */
+.detectionHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.detectionHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.detectionBadgeSuccess {
+  background: #f0f9f3;
+  color: #1e6b39;
+  border: 1px solid #bfe3cc;
+}
+
+.detectionBadgeWarning {
+  background: #fef8ee;
+  color: #b45309;
+  border: 1px solid #f3d9ac;
+}
+
+.detectionEditBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #44403c;
+  border: 1px solid #d6d3d1;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.detectionEditBtn:hover {
+  background: #f7f7f5;
+}
+
+.detectionEditBtnWarning {
+  background: #9c1f06;
+  color: #fff;
+  border: none;
+}
+
+.detectionEditBtnWarning:hover {
+  background: #7d1905;
+}
+
+.detectionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.7fr 0.65fr 0.65fr;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .detectionGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.detectionBox {
+  border: 1px solid #eef0f4;
+  border-radius: 10px;
+  padding: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.detectionIconCircle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.detectionIconDocente { background: #eaf2fb; color: #2f6fb0; }
+.detectionIconPrograma { background: #f1eefb; color: #6d4fb0; }
+.detectionIconCurso { background: #fdf0e4; color: #b0662f; }
+.detectionIconSeccion { background: #fdeef0; color: #b0426a; }
+.detectionIconCiclo { background: #eafaf1; color: #1e6b39; }
+
+.detectionLabel {
+  font-size: 12px;
+  color: #78716c;
+  font-weight: 500;
+}
+
+.detectionValue {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.detectionValueEmpty {
+  color: #a8a29e;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Sección "2. Archivo cargado" */
+.fileLoadedRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.fileLoadedInfo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fileLoadedIconBox {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #eaf5ee;
+  color: #1e6b39;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fileLoadedName {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.fileLoadedMeta {
+  font-size: 12.5px;
+  color: #78716c;
+  margin-top: 2px;
+}
+
+.fileLoadedActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.changeFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #9c1f06;
+  border: 1px solid #e8b8ab;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.changeFileBtn:hover {
+  background: #fbeceb;
+}
+
+/* Sección "3. Vista previa de los datos": mostrar/ocultar filas */
+.tableFooterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tableFooterCaption {
+  font-size: 13px;
+  color: #78716c;
+}
+
+.toggleRowsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #44403c;
+  border: 1px solid #d6d3d1;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.toggleRowsBtn:hover {
+  background: #f7f7f5;
+}

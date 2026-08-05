@@ -7,8 +7,13 @@ import { swaggerSpec } from './config/swagger.js';
 import docentesRouter from './routes/docentes.js';
 import encuestasRouter from './routes/encuestas.js';
 import programasRouter from './routes/programas.js';
+import asignaturasRouter from './routes/asignaturas.js';
 import periodosRouter from './routes/periodos.js';
 import cargasRouter from './routes/cargas.js';
+import revisionesRouter from './routes/revisiones.js';
+import auditLogRouter from './routes/auditLog.js';
+import politicaEvaluacionRouter from './routes/politicaEvaluacion.js';
+import catalogoRouter from './routes/catalogo.js';
 
 dotenv.config();
 
@@ -27,8 +32,13 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/docentes', docentesRouter);
 app.use('/api/encuestas', encuestasRouter);
 app.use('/api/programas', programasRouter);
+app.use('/api/asignaturas', asignaturasRouter);
 app.use('/api/periodos', periodosRouter);
 app.use('/api/cargas', cargasRouter);
+app.use('/api/revisiones', revisionesRouter);
+app.use('/api/audit-log', auditLogRouter);
+app.use('/api/politica-evaluacion', politicaEvaluacionRouter);
+app.use('/api/catalogo', catalogoRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend escuchando en el puerto ${PORT}`);
