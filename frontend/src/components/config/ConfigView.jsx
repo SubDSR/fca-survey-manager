@@ -35,22 +35,17 @@ export default function ConfigView() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.inner}>
-        <Routes>
-          {/* to={{pathname, search}} en vez de un string "carga": un string
-              pierde el ?revision=<id> de la campana (Navigate no arrastra el
-              query de la ruta actual solo). */}
-          <Route index element={<Navigate to={{ pathname: 'carga', search: location.search }} replace />} />
-          <Route path="carga" element={<CargaTab />} />
-          <Route path="carga/subir-csv" element={<SubirCsvPage />} />
-          <Route path="carga/subir-virtual" element={<SubirVirtualPage />} />
-          <Route path="docentes" element={<DocentesTab />} />
-          <Route path="cursos" element={<CursosTab />} />
-          <Route path="programas" element={<ProgramasTab />} />
-          <Route path="*" element={<Navigate to={{ pathname: 'carga', search: location.search }} replace />} />
-        </Routes>
-      </div>
+    <div className="min-h-full bg-surface text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container p-margin-mobile md:p-margin-desktop">
+      <Routes>
+        <Route index element={<Navigate to={{ pathname: 'carga', search: location.search }} replace />} />
+        <Route path="carga" element={<CargaTab />} />
+        <Route path="carga/subir-csv" element={<SubirCsvPage />} />
+        <Route path="carga/subir-virtual" element={<SubirVirtualPage />} />
+        <Route path="docentes" element={<DocentesTab />} />
+        <Route path="cursos" element={<CursosTab />} />
+        <Route path="programas" element={<ProgramasTab />} />
+        <Route path="*" element={<Navigate to={{ pathname: 'carga', search: location.search }} replace />} />
+      </Routes>
 
       <RevisionResolverModal
         revisionId={resolverTargetId}

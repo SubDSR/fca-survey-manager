@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, GraduationCap, User, BookOpen, Edit2, ShieldCheck, Users as UsersIcon, ChevronLeft, ChevronRight, History, TrendingUp, BarChart2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import Modal from '../common/Modal.jsx';
 import styles from './GestionView.module.css';
 import { api } from '../../services/api.js';
 
@@ -42,6 +43,46 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
   const [docentes, setDocentes] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [catalogos, setCatalogos] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const openEditModal = () => {
+    if (!catalogos) {
+      api.docentes.catalogos().then(setCatalogos).catch(console.error);
+    }
+    setEditForm({
+      nombre_completo: selectedProfile.nombre_completo || '',
+      tipo_documento_id: selectedProfile.tipo_documento_id || '',
+      numero_documento: selectedProfile.numero_documento || '',
+      correo_institucional: selectedProfile.correo_institucional || '',
+      facultad_id: selectedProfile.facultad_id || '',
+      condicion_docente_id: selectedProfile.condicion_docente_id || '',
+      categoria_docente_id: selectedProfile.categoria_docente_id || '',
+      grado_academico_id: selectedProfile.grado_academico_id || '',
+      pais_id: selectedProfile.pais_id || '',
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const res = await api.docentes.actualizar(selectedProfile.id, editForm);
+      if (!res.ok) throw new Error(res.data?.error || 'Error al actualizar docente');
+      api.docentes.obtener(selectedProfile.id).then(setSelectedProfile);
+      api.docentes.listar().then(setDocentes);
+      setEditModalOpen(false);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   useEffect(() => {
     let active = true;
@@ -192,7 +233,7 @@ export default function GestionView({ initialDocenteId, activeDocenteIds }) {
                   ID DOCENTE: {selectedProfile.numero_documento || 'N/A'}
                 </div>
               </div>
-              <button className={styles.editButton}>
+              <button className={styles.editButton} onClick={openEditModal}>
                 <Edit2 size={14} /> Editar Perfil
               </button>
             </div>

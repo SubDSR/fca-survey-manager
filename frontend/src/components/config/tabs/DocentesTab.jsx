@@ -141,92 +141,165 @@ export default function DocentesTab() {
 
   return (
     <div>
-      <CatalogHeader
-        title="Configuración de Docentes"
-        subtitle="Administra los docentes del sistema, su información y condiciones."
-        tooltip="Administra el directorio completo de docentes, incluyendo activos y suspendidos."
-      />
-
-      <div className={styles.toolbar}>
-        <div className={styles.searchBox}>
-          <Search size={16} className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o DNI…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={styles.searchInput}
-          />
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-stack-lg mt-4">
+        <div>
+          <h1 className="font-display-lg text-display-lg text-on-surface mb-2 flex items-center gap-3">
+            Configuración de Docentes
+            <span className="material-symbols-outlined text-primary opacity-70 text-[24px] cursor-help" title="Administra los perfiles y estados de los docentes">info</span>
+          </h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+            Administra los docentes del sistema, su información, condiciones y estados contractuales en un solo lugar.
+          </p>
         </div>
-        <select
-          className={styles.filterSelect}
-          value={activoFilter}
-          onChange={(e) => setActivoFilter(e.target.value)}
-        >
-          <option value="todos">Todos</option>
-          <option value="activos">Activos</option>
-          <option value="suspendidos">Suspendidos</option>
-        </select>
-        <select
-          className={styles.filterSelect}
-          value={extraFilters.condicion_id || ''}
-          onChange={(e) => cambiarCondicionFilter(e.target.value)}
-        >
-          <option value="">Todas las condiciones</option>
-          {(catalogos?.condicion_docente || []).map((c) => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
-          ))}
-        </select>
-        <button type="button" className={styles.btnAdd} onClick={abrirCrear}>
-          <Plus size={16} strokeWidth={2.5} />
+        <button onClick={abrirCrear} className="bg-primary text-white px-6 py-3 rounded-lg font-label-md flex items-center gap-2 hover:bg-primary-container transition-colors shadow-md group">
+          <span className="material-symbols-outlined group-hover:rotate-90 transition-transform">add</span>
           Agregar docente
         </button>
       </div>
 
+      {/* Filters & Search Bar */}
+      <div className="glass-card rounded-xl p-4 mb-stack-lg flex flex-col lg:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full lg:w-1/3">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
+          <input
+            className="glass-input w-full pl-10 pr-4 py-2.5 rounded-lg text-sm text-on-surface focus:outline-none placeholder:text-on-surface-variant/70"
+            placeholder="Buscar por nombre, apellidos o DNI..."
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
+          <select
+            className="glass-input px-4 py-2 rounded-full text-sm font-medium text-on-surface focus:outline-none"
+            value={activoFilter}
+            onChange={(e) => setActivoFilter(e.target.value)}
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="activos">Activos</option>
+            <option value="suspendidos">Suspendidos</option>
+          </select>
+          <select
+            className="glass-input px-4 py-2 rounded-full text-sm font-medium text-on-surface focus:outline-none"
+            value={extraFilters.condicion_id || ''}
+            onChange={(e) => cambiarCondicionFilter(e.target.value)}
+          >
+            <option value="">Todas las condiciones</option>
+            {(catalogos?.condicion_docente || []).map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {actionError && (
-        <div className={styles.actionErrorBox}>
-          <AlertCircle size={16} />
-          <span>{actionError}</span>
+        <div className="bg-error-container/20 border border-error/50 rounded-xl p-4 flex gap-3 text-error mb-4 items-center">
+          <AlertCircle size={18} />
+          <span className="font-medium text-sm">{actionError}</span>
         </div>
       )}
 
       {loading && (
-        <div className={styles.emptyState}><Loader2 size={18} className={styles.spin} /> Cargando docentes…</div>
+        <div className="flex justify-center items-center py-12 text-primary">
+          <Loader2 size={32} className={styles.spin} />
+        </div>
       )}
-      {!loading && error && <div className={styles.emptyState}>{error}</div>}
+      {!loading && error && <div className="text-error text-center py-12">{error}</div>}
       {!loading && !error && items.length === 0 && (
-        <div className={styles.emptyState}>No se encontraron docentes para este filtro.</div>
+        <div className="text-center py-12 text-on-surface-variant">No se encontraron docentes para este filtro.</div>
       )}
 
       {!loading && !error && items.length > 0 && (
         <>
-          <div className={styles.grid}>
-            {pageItems.map((d) => (
-              <EntityCard
-                key={d.id}
-                title={d.nombre_completo}
-                subtitle={d.numero_documento || 'Sin documento'}
-                statusLabel={d.condicion || 'Sin condición'}
-                statusColor={condicionColor(d.condicion)}
-                active={d.activo}
-                onEdit={() => abrirEditar(d)}
-                onView={() => setViewTarget(d)}
-                onToggleActive={() => setConfirmTarget(d)}
-                toggleActiveLabel={d.activo ? 'Suspender' : 'Reactivar'}
-                ToggleIcon={d.activo ? UserX : UserCheck}
-                onShowHistory={() => setHistoryTarget(d)}
-              />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter mb-stack-lg">
+            {pageItems.map((d) => {
+              const isNombrado = (d.condicion || '').toLowerCase().includes('nombrado');
+              const isContratado = (d.condicion || '').toLowerCase().includes('contratado');
+              const avatarColorClass = isNombrado ? 'bg-tertiary-container/10 text-tertiary border-tertiary/20' : 'bg-primary-container/10 text-primary border-primary/20';
+              const nameHoverClass = isNombrado ? 'group-hover:text-tertiary' : 'group-hover:text-primary';
+              
+              const tagColorClass = isNombrado 
+                ? 'bg-tertiary-container/10 text-tertiary border-tertiary/20'
+                : isContratado 
+                  ? 'bg-[#0284c7]/10 text-[#0284c7] border-[#0284c7]/20'
+                  : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30';
+              const dotColorClass = isNombrado ? 'bg-tertiary' : isContratado ? 'bg-[#0284c7]' : 'bg-on-surface-variant';
+
+              const initial = d.nombre_completo.charAt(0).toUpperCase();
+
+              return (
+                <div key={d.id} className={`glass-card rounded-xl p-6 hover:translate-y-[-4px] transition-all duration-300 group ${!d.activo ? 'border-error-container opacity-75' : ''}`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-headline-md font-bold border ${!d.activo ? 'bg-surface-container-high text-on-surface-variant' : avatarColorClass}`}>
+                        {initial}
+                      </div>
+                      <div>
+                        <h3 className={`font-headline-md text-base text-on-surface leading-tight mb-1 transition-colors ${!d.activo ? 'line-through text-on-surface-variant' : nameHoverClass}`}>
+                          {d.nombre_completo}
+                        </h3>
+                        <p className="font-body-sm text-on-surface-variant">
+                          {d.numero_documento ? `DNI: ${d.numero_documento}` : 'Sin documento'}
+                        </p>
+                      </div>
+                    </div>
+                    <button onClick={() => setHistoryTarget(d)} className="text-on-surface-variant hover:text-primary transition-colors" title="Ver historial">
+                      <span className="material-symbols-outlined">history</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-6">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${tagColorClass}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${dotColorClass}`}></span>
+                      {d.condicion || 'Sin Condición'}
+                    </span>
+                    {!d.activo && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-error-container/20 text-error text-xs font-medium border border-error/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-error"></span>
+                        Suspendido
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 border-t border-outline-variant/20 pt-4">
+                    <button onClick={() => abrirEditar(d)} className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                      Editar
+                    </button>
+                    <button onClick={() => setViewTarget(d)} className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">visibility</span>
+                      Ver
+                    </button>
+                    <button 
+                      onClick={() => setConfirmTarget(d)} 
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        d.activo 
+                          ? 'text-error hover:bg-error-container/20' 
+                          : 'text-primary hover:bg-primary-container/20'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        {d.activo ? 'person_off' : 'person_check'}
+                      </span>
+                      {d.activo ? 'Suspender' : 'Reactivar'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            setPage={setPage}
-            totalItems={items.length}
-            pageSize={PAGE_SIZE}
-            itemLabel="docentes"
-          />
+          <div className="border-t border-outline-variant/20 pt-6">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              setPage={setPage}
+              totalItems={items.length}
+              pageSize={PAGE_SIZE}
+              itemLabel="docentes"
+            />
+          </div>
         </>
       )}
 
