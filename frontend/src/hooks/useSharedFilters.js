@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CATEGORIA_ORDER } from '../data/constants.js';
 import { classifyDocentesByEstado } from '../lib/stats.js';
+import { useData } from '../context/DataContext.jsx';
 
 /* Filtros compartidos entre Resumen General y Evaluación Docente: Categoría,
    Programa, Ciclo (multi-selección), Sección, Docente, Estado. Adaptado de
@@ -25,6 +26,7 @@ function uniqueSorted(rows, field) {
 }
 
 export function useSharedFilters(rows) {
+  const { politica } = useData();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   const setFilter = (key, value) => {
@@ -58,9 +60,9 @@ export function useSharedFilters(rows) {
 
   const rowsFilteredByEstado = useMemo(() => {
     if (!filters.estado) return rows;
-    const classification = classifyDocentesByEstado(rows);
+    const classification = classifyDocentesByEstado(rows, politica.umbral_aprobacion);
     return rows.filter((r) => classification.get(r.docente) === filters.estado);
-  }, [rows, filters.estado]);
+  }, [rows, filters.estado, politica]);
 
   const { options, rowsBeforeDocente, filteredRows } = useMemo(() => {
     const rowsForCategoria = rowsFilteredByEstado;

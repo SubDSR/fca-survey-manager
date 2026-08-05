@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, BarChart2, Users, BookOpen, FileText, Settings,
-  ChevronLeft, Menu, ChevronDown, Sliders,
+  ChevronLeft, Menu, ChevronDown, ChevronRight, Sliders, HelpCircle,
 } from 'lucide-react';
 import { LOGO_UNMSM } from '../../assets/logos.js';
 
@@ -12,12 +12,33 @@ const NAV_ITEMS = [
   { to: '/gestion-docentes', icon: Users, label: 'Gestión de Docentes', disabled: false },
   { to: '/cursos-y-programas', icon: BookOpen, label: 'Cursos y Programas', disabled: false },
   { to: null, icon: FileText, label: 'Reportes', disabled: true },
-  { to: '/configuracion', icon: Settings, label: 'Configuración', disabled: false },
+  {
+    to: '/configuracion',
+    icon: Settings,
+    label: 'Configuración',
+    disabled: false,
+    children: [
+      { to: '/configuracion/carga', label: 'Carga de Información' },
+      { to: '/configuracion/docentes', label: 'Docentes' },
+      { to: '/configuracion/cursos', label: 'Catálogo de Cursos' },
+      { to: '/configuracion/programas', label: 'Catálogo de Programas' },
+    ],
+  },
 ];
 
 export default function Sidebar({ onViewChange, sel, docenteStats }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [configExpanded, setConfigExpanded] = useState(() => location.pathname.startsWith('/configuracion'));
+
+  // El submenú de Configuración se auto-expande al entrar a cualquier
+  // /configuracion/* (click en la campana de incidencias, URL directa,
+  // recarga, etc.) sin pisar un colapso manual mientras el usuario sigue
+  // dentro de la misma sub-ruta.
+  useEffect(() => {
+    if (location.pathname.startsWith('/configuracion')) setConfigExpanded(true);
+  }, [location.pathname]);
 
   const showDocenteBlocks = !collapsed && location.pathname === '/evaluacion-docente' && sel?.selected;
 
@@ -66,6 +87,45 @@ export default function Sidebar({ onViewChange, sel, docenteStats }) {
                 <item.icon size={15} className="shrink-0" />
                 {!collapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
               </button>
+            );
+          }
+          if (item.children) {
+            const isSectionActive = location.pathname.startsWith(item.to);
+            return (
+              <div key={item.to}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onViewChange?.();
+                    setConfigExpanded((v) => !v);
+                    if (!location.pathname.startsWith(item.to)) navigate(item.children[0].to);
+                  }}
+                  className={`w-full flex items-center rounded-lg transition-colors ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'} ${
+                    isSectionActive ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon size={15} className="shrink-0" />
+                  {!collapsed && <span className="text-xs font-medium truncate flex-1 text-left">{item.label}</span>}
+                  {!collapsed && (configExpanded ? <ChevronDown size={13} className="shrink-0" /> : <ChevronRight size={13} className="shrink-0" />)}
+                </button>
+                {!collapsed && configExpanded && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        onClick={() => onViewChange?.()}
+                        className={({ isActive }) => `w-full flex items-center gap-2.5 rounded-lg transition-colors no-underline pl-8 pr-3 py-2 ${
+                          isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+                        <span className="text-xs truncate">{child.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           }
           return (
@@ -133,6 +193,29 @@ export default function Sidebar({ onViewChange, sel, docenteStats }) {
                 <div className="text-[8px] mt-0.5 text-primary-mid">Encuestas</div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bloque de ayuda -- solo dentro de Configuración (cualquiera de las
+          4 sub-rutas), mismo patrón de useLocation() que showDocenteBlocks
+          arriba. "Ver guía" sin destino todavía: no existe contenido de
+          guía real (mismo criterio ya usado para otros enlaces de ayuda
+          placeholder de esta tarea). */}
+      {!collapsed && location.pathname.startsWith('/configuracion') && (
+        <div className="border-t border-slate-100 p-3">
+          <div className="rounded-xl p-3" style={{ background: '#fdf1ea' }}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <HelpCircle size={14} className="text-primary shrink-0" />
+              <span className="text-xs font-bold text-slate-700">¿Necesitas ayuda?</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mb-2 leading-snug">Consulta la guía de uso o contacta al soporte.</p>
+            <button
+              type="button"
+              className="w-full text-[11px] font-bold text-primary border border-primary rounded-lg py-1.5 bg-transparent hover:bg-white transition-colors cursor-default"
+            >
+              Ver guía
+            </button>
           </div>
         </div>
       )}

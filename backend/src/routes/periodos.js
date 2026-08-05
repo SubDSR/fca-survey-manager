@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { listarPeriodos, crearPeriodo, activarPeriodo, campaniaActivaDePeriodo } from '../controllers/periodos.js';
+import {
+  listarPeriodos, crearPeriodo, activarPeriodo, campaniaActivaDePeriodo,
+  actualizarPeriodo, eliminarPeriodo,
+} from '../controllers/periodos.js';
 
 const router = Router();
 
@@ -128,5 +131,51 @@ router.patch('/:id/activar', activarPeriodo);
  *         description: No hay campaña abierta para este período
  */
 router.get('/:id/campania-activa', campaniaActivaDePeriodo);
+
+/**
+ * @swagger
+ * /api/periodos/{id}:
+ *   patch:
+ *     summary: Edita fecha_inicio/fecha_fin/anio/semestre de un período
+ *     tags: [Periodos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Período actualizado
+ *       400:
+ *         description: Datos inválidos
+ *       404:
+ *         description: Período no encontrado
+ *       409:
+ *         description: No se puede cambiar año/semestre porque ya tiene campañas asociadas
+ */
+router.patch('/:id', actualizarPeriodo);
+
+/**
+ * @swagger
+ * /api/periodos/{id}:
+ *   delete:
+ *     summary: Elimina un período académico (solo si no tiene cargas ni encuestas asociadas)
+ *     tags: [Periodos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Período eliminado
+ *       404:
+ *         description: Período no encontrado
+ *       409:
+ *         description: El período tiene cargas o encuestas asociadas
+ */
+router.delete('/:id', eliminarPeriodo);
 
 export default router;

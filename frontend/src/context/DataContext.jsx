@@ -10,6 +10,14 @@ export function DataProvider({ children }) {
   const [groupRows, setGroupRows] = useState([]);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
+  // Política de evaluación activa (umbral_aprobacion, umbral_seguimiento_pct_no,
+  // umbral_critico_pct_no, etc. -- GET /api/politica-evaluacion). Fuente única
+  // de estos umbrales: nada en el frontend los hardcodea, todo lo que antes
+  // comparaba contra 11/14/30/45 literal ahora recibe este valor. Se carga en
+  // el mismo Promise.all bloqueante que roster/consolidado (no en el
+  // paralelo no-bloqueante de criterios/directivas) porque aprobado/
+  // desaprobado y el aviso de seguimiento son tan centrales como esos dos.
+  const [politica, setPolitica] = useState(null);
   // Roster de docentes (categoría/facultad) cargado desde GET /api/docentes.
   const [roster, setRoster] = useState(new Map());
   // Vistas de detalle por criterio/directiva (GET /api/encuestas/criterios y
@@ -30,19 +38,20 @@ export function DataProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
-    Promise.all([api.docentes.listar(), api.encuestas.consolidado()])
-      .then(([docentes, consolidadoData]) => {
+    Promise.all([api.docentes.listar(), api.encuestas.consolidado(), api.politicaEvaluacion.obtener()])
+      .then(([docentes, consolidadoData, politicaData]) => {
         if (cancelled) return;
         const newRoster = buildRosterFromApi(docentes);
         setRoster(newRoster);
         const rows = buildGroupRows(consolidadoData, newRoster);
         setGroupRows(rows);
+        setPolitica(politicaData);
         setError(null);
         setStatus(rows.length ? 'ready' : 'empty');
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('No se pudo cargar docentes/consolidado desde el backend:', err);
+        console.error('No se pudo cargar docentes/consolidado/política desde el backend:', err);
         setStatus('error');
         setError('No se pudo cargar los datos desde el servidor.');
       });
@@ -70,7 +79,7 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      groupRows, roster, criterios, directivas, status, error, criteriosError, directivasError,
+      groupRows, roster, criterios, directivas, status, error, criteriosError, directivasError, politica,
       criteriaLabels: CRITERIA_LABELS, directiveLabels: DIRECTIVE_LABELS, shortCriteriaLabels: SHORT_CRITERIA_LABELS,
     }}>
       {children}

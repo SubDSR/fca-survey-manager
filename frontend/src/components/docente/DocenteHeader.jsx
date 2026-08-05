@@ -2,6 +2,7 @@ import Card from '../common/Card.jsx';
 import { categoriaSlug } from '../../data/constants.js';
 import { uniqueSorted } from '../../lib/groups.js';
 import { computeDocenteVsPrograma } from '../../lib/stats.js';
+import { useData } from '../../context/DataContext.jsx';
 import ContextStrip from './ContextStrip.jsx';
 import styles from './DocenteView.module.css';
 
@@ -18,6 +19,8 @@ function getInitials(name) {
 }
 
 export default function DocenteHeader({ selected, cursoRows, programaRows, onMoreInfo }) {
+  const { politica } = useData();
+
   if (!selected) {
     return (
       <Card className={`docente-header ${styles.docenteHeader}`}>
@@ -57,7 +60,7 @@ export default function DocenteHeader({ selected, cursoRows, programaRows, onMor
   // "Nombrado - OF" traen su facultad de origen y el resto, Ciencias Administrativas.
   const facultadOrigen = first.facultad;
 
-  const { notaDocente, notaPrograma, delta, aprobado } = computeDocenteVsPrograma(cursoRows, programaRows);
+  const { notaDocente, notaPrograma, delta, aprobado } = computeDocenteVsPrograma(cursoRows, programaRows, politica.umbral_aprobacion);
   let deltaClass = styles.neu;
   let deltaSign = '';
   if (delta > 0.3) { deltaClass = styles.pos; deltaSign = '+'; }

@@ -16,3 +16,7 @@ docs/superpowers/
 Rediseño de Reporte Docente/
 .vercel
 .env*
+
+# Backups locales de BD y artefactos de debug, no versionar
+backend/backups/
+frontend/audit-detalle.json

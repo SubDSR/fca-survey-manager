@@ -18,7 +18,7 @@ import CursoDetailModal from './components/modals/CursoDetailModal.jsx';
 const EMPTY_MODAL = { kind: null, payload: null };
 
 export default function App() {
-  const { status, error, groupRows } = useData();
+  const { status, error, groupRows, politica } = useData();
   const navigate = useNavigate();
   const [modal, setModal] = useState(EMPTY_MODAL);
   const [pendingDocenteSelection, setPendingDocenteSelection] = useState(null);
@@ -42,7 +42,7 @@ export default function App() {
 
   const docenteStats = sel.selected && cursoRows.length
     ? {
-      ...computeDocenteVsPrograma(cursoRows, programaRows),
+      ...computeDocenteVsPrograma(cursoRows, programaRows, politica.umbral_aprobacion),
       nValidas: cursoRows.reduce((a, r) => a + (r.nValidas || 0), 0),
     }
     : null;
@@ -115,6 +115,7 @@ export default function App() {
                 <DirectorView
                   onOpenSeguimiento={(groups) => openModal('seguimiento', groups)}
                   onSelectDocente={handleSelectDocente}
+                  onIrAGestion={handleIrAGestion}
                   sharedFilters={sharedFilters}
                 />
               )}
@@ -170,6 +171,7 @@ export default function App() {
         onClose={closeModal}
         groups={modal.kind === 'seguimiento' ? modal.payload : []}
         onVerDetalle={handleVerDetalle}
+        politica={politica}
       />
       <CriteriaInfoModal
         open={modal.kind === 'criteria'}

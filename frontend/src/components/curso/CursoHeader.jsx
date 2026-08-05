@@ -3,6 +3,7 @@ import Card from '../common/Card.jsx';
 import ContextStrip from '../docente/ContextStrip.jsx';
 import { uniqueSorted } from '../../lib/groups.js';
 import { weightedNotaPromedio } from '../../lib/stats.js';
+import { useData } from '../../context/DataContext.jsx';
 import styles from '../docente/DocenteView.module.css';
 
 function getInitials(name) {
@@ -13,7 +14,9 @@ function getInitials(name) {
 }
 
 export default function CursoHeader({ selectedCurso, filteredRows, programaRows }) {
-  if (!selectedCurso || filteredRows.length === 0) {
+  const { politica } = useData();
+
+  if (!selectedCurso) {
     return (
       <Card className={`docente-header ${styles.docenteHeader}`}>
         <div className={styles.docenteHeaderPlaceholder}>
@@ -25,6 +28,17 @@ export default function CursoHeader({ selectedCurso, filteredRows, programaRows 
             </p>
           </div>
         </div>
+      </Card>
+    );
+  }
+
+  // Curso del catálogo sin ninguna encuesta cargada todavía — a diferencia
+  // del caso de arriba (nada seleccionado), acá sí hay un curso elegido, solo
+  // que no tiene datos. Mismo patrón que DocenteHeader.jsx.
+  if (filteredRows.length === 0) {
+    return (
+      <Card className={`docente-header ${styles.docenteHeader}`}>
+        <div className={styles.emptyState}>Sin encuestas realizadas</div>
       </Card>
     );
   }
@@ -45,7 +59,7 @@ export default function CursoHeader({ selectedCurso, filteredRows, programaRows 
   if (delta > 0.3) { deltaClass = styles.pos; deltaSign = '+'; }
   else if (delta < -0.3) { deltaClass = styles.neg; deltaSign = ''; }
 
-  const aprobado = notaCurso >= 14;
+  const aprobado = notaCurso >= politica.umbral_aprobacion;
 
   const shortName = (selectedCurso.split(' ')[0] || selectedCurso).toUpperCase();
   const pctPrograma = Math.max(2, Math.min(100, (notaPrograma / 20) * 100));
