@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BarChart2, Users, BookOpen, FileText, Settings,
   ChevronLeft, Menu, ChevronDown, Sliders,
@@ -6,18 +7,19 @@ import {
 import { LOGO_UNMSM } from '../../assets/logos.js';
 
 const NAV_ITEMS = [
-  { id: 'director', icon: LayoutDashboard, label: 'Resumen General', disabled: false },
-  { id: 'docente', icon: BarChart2, label: 'Evaluación Docente', disabled: false },
-  { id: 'gestion', icon: Users, label: 'Gestión de Docentes', disabled: false },
-  { id: 'cursos', icon: BookOpen, label: 'Cursos y Programas', disabled: false },
-  { id: 'reportes', icon: FileText, label: 'Reportes', disabled: true },
-  { id: 'config', icon: Settings, label: 'Configuración', disabled: false },
+  { to: '/', end: true, icon: LayoutDashboard, label: 'Resumen General', disabled: false },
+  { to: '/evaluacion-docente', icon: BarChart2, label: 'Evaluación Docente', disabled: false },
+  { to: '/gestion-docentes', icon: Users, label: 'Gestión de Docentes', disabled: false },
+  { to: '/cursos-y-programas', icon: BookOpen, label: 'Cursos y Programas', disabled: false },
+  { to: null, icon: FileText, label: 'Reportes', disabled: true },
+  { to: '/configuracion', icon: Settings, label: 'Configuración', disabled: false },
 ];
 
-export default function Sidebar({ view, onViewChange, sel, docenteStats }) {
+export default function Sidebar({ onViewChange, sel, docenteStats }) {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
 
-  const showDocenteBlocks = !collapsed && view === 'docente' && sel?.selected;
+  const showDocenteBlocks = !collapsed && location.pathname === '/evaluacion-docente' && sel?.selected;
 
   return (
     <div
@@ -51,23 +53,39 @@ export default function Sidebar({ view, onViewChange, sel, docenteStats }) {
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
-          const active = item.id === view;
+          if (item.disabled) {
+            return (
+              <button
+                key={item.label}
+                type="button"
+                disabled
+                aria-disabled="true"
+                tabIndex={-1}
+                className={`w-full flex items-center rounded-lg transition-colors ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'} text-slate-300 cursor-not-allowed`}
+              >
+                <item.icon size={15} className="shrink-0" />
+                {!collapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
+              </button>
+            );
+          }
           return (
-            <button
-              key={item.id}
-              type="button"
-              disabled={item.disabled}
-              aria-disabled={item.disabled}
-              tabIndex={item.disabled ? -1 : 0}
-              onClick={item.disabled ? undefined : () => onViewChange(item.id)}
-              className={`w-full flex items-center rounded-lg transition-colors ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'} ${
-                active ? 'bg-primary text-white' : item.disabled ? 'text-slate-300 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-50'
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              onClick={() => onViewChange?.()}
+              className={({ isActive }) => `w-full flex items-center rounded-lg transition-colors no-underline ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'} ${
+                isActive ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'
               }`}
             >
-              <item.icon size={15} className="shrink-0" />
-              {!collapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
-              {!collapsed && active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />}
-            </button>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={15} className="shrink-0" />
+                  {!collapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
+                  {!collapsed && isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />}
+                </>
+              )}
+            </NavLink>
           );
         })}
       </nav>

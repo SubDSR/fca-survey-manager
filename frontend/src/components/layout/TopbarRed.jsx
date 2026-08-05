@@ -1,12 +1,25 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, Bell } from 'lucide-react';
 import { useData } from '../../context/DataContext.jsx';
 import { matchDocentes } from '../../lib/search.js';
 
-const TITLES = { director: 'Resumen General', docente: 'Evaluación Docente', cursos: 'Cursos y Programas' };
+// Equivalente ruta -> título del breadcrumb, reemplaza el objeto TITLES que
+// antes se indexaba por `view` (useState local). Se completan Gestión de
+// Docentes y Configuración, que antes quedaban sin título (TITLES no las
+// tenía) — mismo breadcrumb vacío para esas dos vistas, corregido de paso al
+// tener que reescribir este mapeo de todas formas.
+const TITLES = {
+  '/': 'Resumen General',
+  '/evaluacion-docente': 'Evaluación Docente',
+  '/gestion-docentes': 'Gestión de Docentes',
+  '/cursos-y-programas': 'Cursos y Programas',
+  '/configuracion': 'Configuración',
+};
 
-export default function TopbarRed({ view, onSelectDocente }) {
+export default function TopbarRed({ onSelectDocente }) {
   const { groupRows: rows } = useData();
+  const location = useLocation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -33,7 +46,7 @@ export default function TopbarRed({ view, onSelectDocente }) {
       <div className="text-xs font-medium text-primary-mid">
         Sistema de Evaluación Docente
         <span className="mx-2 opacity-50">/</span>
-        <span className="text-white font-semibold">{TITLES[view] || ''}</span>
+        <span className="text-white font-semibold">{TITLES[location.pathname] || ''}</span>
       </div>
       <div className="flex items-center gap-2">
         <div ref={wrapperRef} className="relative">
