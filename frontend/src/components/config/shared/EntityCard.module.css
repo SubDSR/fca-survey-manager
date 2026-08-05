@@ -1,0 +1,207 @@
+.card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  gap: 14px;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+/* Header horizontal: avatar a la izquierda, nombre/DNI/condición en
+   columna a la derecha, alineado a la izquierda (antes quedaba todo
+   apilado y centrado). */
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Deja aire para el botón "⋮" (menuWrap), que es absolute top-right. */
+  padding-right: 22px;
+}
+
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.menuWrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.menuBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.menuBtn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.menuDropdown {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+  padding: 4px;
+  min-width: 190px;
+  z-index: 5;
+  text-align: left;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.menuItem:hover {
+  background: var(--bg);
+}
+
+.cardSuspended {
+  opacity: 0.6;
+  filter: grayscale(0.35);
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: 12.5px;
+  color: var(--text-soft);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.suspendedChip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-soft);
+  border: 1px solid var(--border);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.actionBtn {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  border-radius: var(--radius);
+  padding: 7px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionBtn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.actionBtnWarn:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+.actionBtnOk:hover {
+  border-color: var(--green);
+  color: #1e6b39;
+  background: var(--green-bg);
+}
