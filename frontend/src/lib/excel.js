@@ -672,6 +672,91 @@ export async function exportDirectorToExcel({
   wsD.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 6 } };
   wsD.views = [{ state: 'frozen', ySplit: 1 }];
 
+  /* ============ HOJA 3: DATA CONSOLIDADA ============ */
+  const wsO = workbook.addWorksheet('Data Consolidada', { properties: { tabColor: { argb: XLS_COLORS.brand } } });
+  wsO.columns = [
+    { header: 'N°', key: 'n', width: 5 },
+    { header: 'PROGRAMA', key: 'programa', width: 35 },
+    { header: 'DOCENTE', key: 'docente', width: 45 },
+    { header: 'ASIGNATURA', key: 'asignatura', width: 50 },
+    { header: 'CICLO', key: 'ciclo', width: 10 },
+    { header: 'SECCIÓN', key: 'seccion', width: 10 },
+    { header: 'Din', key: 'din', width: 10 },
+    { header: 'Dim', key: 'dim', width: 10 }
+  ];
+
+  wsO.getRow(1).font = { bold: true, color: { argb: XLS_COLORS.headerText } };
+  wsO.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_COLORS.brand } };
+  wsO.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  for (let c = 1; c <= 8; c++) {
+    wsO.getCell(1, c).border = thinBorder();
+  }
+
+  const toRoman = (num) => {
+    const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII' };
+    return roman[num] || num;
+  };
+
+  const flatGroups = [...groups].sort((a, b) => {
+    return a.docente.localeCompare(b.docente, 'es') ||
+           (a.programa || '').localeCompare(b.programa || '', 'es') ||
+           String(a.ciclo).localeCompare(String(b.ciclo), 'es') ||
+           String(a.seccion).localeCompare(String(b.seccion), 'es');
+  });
+
+  let currentDoc = null;
+  let startRowIdx = 0;
+  let rowIdx = 2;
+  let docIdx = 1;
+
+  flatGroups.forEach((g) => {
+    if (g.docente !== currentDoc) {
+      if (currentDoc !== null && rowIdx - 1 > startRowIdx) {
+        wsO.mergeCells('A' + startRowIdx + ':A' + (rowIdx - 1));
+        wsO.mergeCells('C' + startRowIdx + ':C' + (rowIdx - 1));
+      }
+      currentDoc = g.docente;
+      startRowIdx = rowIdx;
+      
+      wsO.getCell('A' + rowIdx).value = docIdx++;
+      wsO.getCell('C' + rowIdx).value = g.docente;
+      
+      wsO.getCell('A' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      wsO.getCell('C' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    }
+    
+    wsO.getCell('B' + rowIdx).value = g.programa || 'N/A';
+    wsO.getCell('B' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    
+    wsO.getCell('D' + rowIdx).value = g.curso;
+    wsO.getCell('E' + rowIdx).value = toRoman(g.ciclo);
+    wsO.getCell('F' + rowIdx).value = g.seccion;
+    wsO.getCell('G' + rowIdx).value = g.nota ? Number(g.nota).toFixed(1) : '-';
+    
+    const pctSiVal = computeDirectiveCounts(g.rows).pctSi;
+    wsO.getCell('H' + rowIdx).value = pctSiVal !== undefined ? Number(pctSiVal).toFixed(1) : '-';
+    
+    wsO.getCell('D' + rowIdx).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+    wsO.getCell('E' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
+    wsO.getCell('F' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
+    wsO.getCell('G' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
+    wsO.getCell('H' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    for (let c = 1; c <= 8; c++) {
+      wsO.getCell(rowIdx, c).border = thinBorder();
+    }
+    
+    rowIdx++;
+  });
+
+  if (currentDoc !== null && rowIdx - 1 > startRowIdx) {
+    wsO.mergeCells('A' + startRowIdx + ':A' + (rowIdx - 1));
+    wsO.mergeCells('C' + startRowIdx + ':C' + (rowIdx - 1));
+  }
+  
+  wsO.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 8 } };
+  wsO.views = [{ state: 'frozen', ySplit: 1 }];
+
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
