@@ -16,6 +16,19 @@ function formatDateTime(value) {
   return new Date(value).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// Mismo plazo que backend/src/controllers/cargas.js (PLAZO_ELIMINACION_DIAS)
+// -- este chequeo en el frontend es solo cosmético (deshabilita el botón
+// para no invitar al click); la validación real que de verdad protege los
+// datos vive en el backend, que la vuelve a hacer sin confiar en esto.
+const PLAZO_ELIMINACION_DIAS = 7;
+const MENSAJE_PLAZO_ELIMINACION = `No se puede eliminar: han pasado más de ${PLAZO_ELIMINACION_DIAS} días desde la carga.`;
+
+function haPasadoElPlazoDeEliminacion(fechaCarga) {
+  if (!fechaCarga) return false;
+  const antiguedadMs = Date.now() - new Date(fechaCarga).getTime();
+  return antiguedadMs > PLAZO_ELIMINACION_DIAS * 24 * 60 * 60 * 1000;
+}
+
 // fecha_inicio/fecha_fin llegan como "YYYY-MM-DD": construir con hora fija
 // evita que el motor de zona horaria del navegador la corra un día.
 function formatDateOnly(value) {
@@ -596,6 +609,7 @@ export default function CargaTab() {
                   {uploads.map((u) => {
                     const tieneDetalle = u.filas_omitidas > 0 || u.filas_error > 0;
                     const expanded = expandedId === u.id;
+                    const bloqueadaPorPlazo = haPasadoElPlazoDeEliminacion(u.fecha_carga);
                     return (
                       <div key={u.id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg overflow-hidden">
                         <div className={`p-3 flex items-start gap-3 ${!u.visible ? 'opacity-60' : ''}`}>
@@ -641,9 +655,14 @@ export default function CargaTab() {
                             </button>
                             <button
                               type="button"
-                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors"
-                              title="Eliminar carga"
-                              onClick={() => { setDeleteTarget(u); setDeleteError(''); }}
+                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                              title={bloqueadaPorPlazo ? MENSAJE_PLAZO_ELIMINACION : 'Eliminar carga'}
+                              disabled={bloqueadaPorPlazo}
+                              onClick={() => {
+                                if (bloqueadaPorPlazo) return;
+                                setDeleteTarget(u);
+                                setDeleteError('');
+                              }}
                             >
                               <Trash2 size={14} />
                             </button>

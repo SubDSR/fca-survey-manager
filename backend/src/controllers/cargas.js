@@ -246,8 +246,21 @@ export async function cambiarVisibilidad(req, res) {
   res.json(data);
 }
 
+const PLAZO_ELIMINACION_DIAS = 7;
+const PLAZO_ELIMINACION_MS = PLAZO_ELIMINACION_DIAS * 24 * 60 * 60 * 1000;
+
 // DELETE /api/cargas/:id — borra en cascada (respuesta -> encuesta ->
 // encuestado -> carga_csv) vía fn_eliminar_carga, en una sola transacción.
+//
+// Pasados PLAZO_ELIMINACION_DIAS desde carga_csv.fecha_carga (la misma
+// columna que ya se usa como fecha de referencia en todo el sistema para
+// esta tabla — historial, orden, etc.), se bloquea el borrado: una carga
+// vieja probablemente ya tiene reportes/decisiones tomadas sobre ella, y
+// borrarla sin darse cuenta del tiempo transcurrido es más fácil de lo
+// que parece (ver toda esta conversación: DELETE directo por curl varias
+// veces durante pruebas). La validación real vive acá, no solo en el
+// frontend -- deshabilitar el botón es cosmético, cualquiera con acceso a
+// la API puede saltárselo.
 export async function eliminarCarga(req, res) {
   const { id } = req.params;
 
@@ -256,14 +269,33 @@ export async function eliminarCarga(req, res) {
   // existencia antes para poder responder 404 correctamente.
   const { data: existente, error: errorExistente } = await supabase
     .from('carga_csv')
-    .select('id')
+    .select('id, fecha_carga')
     .eq('id', id)
     .maybeSingle();
   if (errorExistente) return res.status(500).json({ error: errorExistente.message });
   if (!existente) return res.status(404).json({ error: 'Carga no encontrada' });
 
+  const antiguedadMs = Date.now() - new Date(existente.fecha_carga).getTime();
+  if (antiguedadMs > PLAZO_ELIMINACION_MS) {
+    return res.status(403).json({
+      error: `No se puede eliminar: han pasado más de ${PLAZO_ELIMINACION_DIAS} días desde la carga (fecha_carga: ${existente.fecha_carga}).`,
+    });
+  }
+
   const { data, error } = await supabase.rpc('fn_eliminar_carga', { p_carga_id: Number(id) });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) {
+    // fn_eliminar_carga también valida el plazo (defensa en profundidad,
+    // ver 2026-08-06-plazo-eliminar-carga.sql) -- si esta excepción
+    // puntual llega hasta acá es porque algo saltó el chequeo de arriba
+    // (condición de carrera con el reloj justo en el borde del plazo, o
+    // una llamada a la función que no pasó por este controlador), así que
+    // se traduce al mismo 403 con el mismo mensaje en vez de un 500
+    // genérico.
+    if (error.message && error.message.includes('No se puede eliminar')) {
+      return res.status(403).json({ error: error.message });
+    }
+    return res.status(500).json({ error: error.message });
+  }
 
   res.json({
     eliminado: true,
