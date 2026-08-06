@@ -97,6 +97,7 @@ export function buildDetailedResponseRows(respuestas, scopeRows, directiveLabels
         aula: info?.aula ?? '',
         ciclo: toRoman(r.ciclo),
         seccion: String(r.seccion),
+        modalidad: r.modalidad,
         scores: new Array(6).fill(null),
         directivas: directiveLabels.map((label) => ({ label, value: null })),
       });

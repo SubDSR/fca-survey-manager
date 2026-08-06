@@ -681,6 +681,7 @@ export async function exportDirectorToExcel({
     { header: 'ASIGNATURA', key: 'asignatura', width: 50 },
     { header: 'CICLO', key: 'ciclo', width: 10 },
     { header: 'SECCIÓN', key: 'seccion', width: 10 },
+    { header: 'MODALIDAD', key: 'modalidad', width: 15 },
     { header: 'Din', key: 'din', width: 10 },
     { header: 'Dim', key: 'dim', width: 10 }
   ];
@@ -688,7 +689,7 @@ export async function exportDirectorToExcel({
   wsO.getRow(1).font = { bold: true, color: { argb: XLS_COLORS.headerText } };
   wsO.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_COLORS.brand } };
   wsO.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-  for (let c = 1; c <= 8; c++) {
+  for (let c = 1; c <= 9; c++) {
     wsO.getCell(1, c).border = thinBorder();
   }
 
@@ -731,18 +732,30 @@ export async function exportDirectorToExcel({
     wsO.getCell('D' + rowIdx).value = g.curso;
     wsO.getCell('E' + rowIdx).value = toRoman(g.ciclo);
     wsO.getCell('F' + rowIdx).value = g.seccion;
-    wsO.getCell('G' + rowIdx).value = g.nota ? Number(g.nota).toFixed(1) : '-';
+    
+    const modalidades = new Set(g.rows.map(r => r.modalidad));
+    let modalidadLabel = '-';
+    if (modalidades.size > 1) {
+      modalidadLabel = 'Mixta';
+    } else if (modalidades.size === 1) {
+      const m = modalidades.values().next().value;
+      modalidadLabel = m === 'virtual' ? 'Virtual' : 'Presencial';
+    }
+    wsO.getCell('G' + rowIdx).value = modalidadLabel;
+
+    wsO.getCell('H' + rowIdx).value = g.nota ? Number(g.nota).toFixed(1) : '-';
     
     const pctSiVal = computeDirectiveCounts(g.rows).pctSi;
-    wsO.getCell('H' + rowIdx).value = pctSiVal !== undefined ? Number(pctSiVal).toFixed(1) : '-';
+    wsO.getCell('I' + rowIdx).value = pctSiVal !== undefined ? Number(pctSiVal).toFixed(1) : '-';
     
     wsO.getCell('D' + rowIdx).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
     wsO.getCell('E' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
     wsO.getCell('F' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
     wsO.getCell('G' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
     wsO.getCell('H' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
+    wsO.getCell('I' + rowIdx).alignment = { vertical: 'middle', horizontal: 'center' };
     
-    for (let c = 1; c <= 8; c++) {
+    for (let c = 1; c <= 9; c++) {
       wsO.getCell(rowIdx, c).border = thinBorder();
     }
     
@@ -754,7 +767,7 @@ export async function exportDirectorToExcel({
     wsO.mergeCells('C' + startRowIdx + ':C' + (rowIdx - 1));
   }
   
-  wsO.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 8 } };
+  wsO.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 9 } };
   wsO.views = [{ state: 'frozen', ySplit: 1 }];
 
   const buffer = await workbook.xlsx.writeBuffer();
