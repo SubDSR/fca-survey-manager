@@ -3,12 +3,19 @@ import multer from 'multer';
 import {
   listarCargasPorCampania, subirCarga, obtenerCarga, cambiarVisibilidad, eliminarCarga,
   listarPendientesDeCarga, resolverPendienteCarga, detectarContextoVirtualHandler,
+  subirLoteVirtual, obtenerLote,
 } from '../controllers/cargas.js';
 
 const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
+});
+// Límite más generoso que el de un CSV suelto: un ZIP puede traer ~15
+// archivos de encuestas virtuales (ver tarea "carga por lote").
+const uploadZip = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 * 1024 * 1024 },
 });
 
 /**
@@ -96,6 +103,64 @@ router.post('/', upload.single('file'), subirCarga);
  *         description: Falta nombre_archivo
  */
 router.get('/detectar-contexto-virtual', detectarContextoVirtualHandler);
+
+/**
+ * @swagger
+ * /api/cargas/lote-virtual:
+ *   post:
+ *     summary: Sube un ZIP con varios CSV de encuestas virtuales (cada uno detecta su propio docente/curso)
+ *     tags: [Cargas]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [periodo_id, file]
+ *             properties:
+ *               periodo_id:
+ *                 type: integer
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Archivo .zip con uno o más CSV en el formato de encuesta virtual.
+ *     responses:
+ *       202:
+ *         description: >
+ *           ZIP leído y una fila de carga_csv registrada por cada CSV encontrado
+ *           (todas comparten lote_id) — el procesamiento real (detectar contexto
+ *           + importar filas) sigue en background, un archivo a la vez. Hacer
+ *           polling a GET /api/cargas/lote/{loteId} hasta que todas las cargas
+ *           del lote lleguen a un estado final.
+ *       400:
+ *         description: Falta el ZIP/periodo_id, o el ZIP no contiene ningún .csv
+ *       404:
+ *         description: Período no encontrado
+ *       409:
+ *         description: No hay campaña abierta para ese período
+ */
+router.post('/lote-virtual', uploadZip.single('file'), subirLoteVirtual);
+
+/**
+ * @swagger
+ * /api/cargas/lote/{loteId}:
+ *   get:
+ *     summary: Todas las cargas de un lote (ZIP), para el polling de progreso y el resumen final
+ *     tags: [Cargas]
+ *     parameters:
+ *       - in: path
+ *         name: loteId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: "{ lote_id, nombre_lote, cargas: [...] } -- mismo shape que GET /api/cargas"
+ *       404:
+ *         description: Lote no encontrado
+ */
+router.get('/lote/:loteId', obtenerLote);
 
 /**
  * @swagger

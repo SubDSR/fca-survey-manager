@@ -1,8 +1,10 @@
 import { parse } from 'csv-parse/sync';
+import { randomUUID } from 'crypto';
 import { supabase } from '../config/supabase.js';
 import { importarFilasCsv, resolverPendiente } from '../services/importarEncuestas.js';
 import { importarFilasCsvVirtual, COLUMNAS_ESPERADAS_VIRTUAL } from '../services/importarEncuestasVirtual.js';
 import { detectarContextoVirtual } from '../services/detectarContextoVirtual.js';
+import { extraerCsvsDeZip, advertenciaProgramaZip } from '../utils/zipVirtual.js';
 
 const COLUMNAS_ESPERADAS = [
   'Programa', 'Ciclo', 'Seccion', 'Aula', 'Codigo', 'Docente', 'Curso',
@@ -17,7 +19,7 @@ export async function listarCargasPorCampania(req, res) {
 
   const { data, error } = await supabase
     .from('carga_csv')
-    .select('id, archivo_nombre, filas_leidas, filas_procesadas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga')
+    .select('id, archivo_nombre, filas_leidas, filas_procesadas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, motivo_pendiente, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga, lote_id, nombre_lote')
     .eq('campania_id', campania_id)
     .order('fecha_carga', { ascending: false });
 
@@ -75,6 +77,41 @@ async function procesarCargaEnBackground({ esVirtual, filas, periodo, campania, 
   }
 }
 
+// Resuelve periodo_academico + su campaña BORRADOR/ABIERTA más reciente --
+// compartido por subirCarga (un archivo) y subirLoteVirtual (un ZIP con
+// varios), que necesitan exactamente la misma validación antes de aceptar
+// cualquier archivo. Devuelve { periodo, campania } o { error: { status,
+// body } } para que el caller solo tenga que decidir si responder.
+async function resolverPeriodoYCampaniaAbierta(periodoId) {
+  const { data: periodo, error: errorPeriodo } = await supabase
+    .from('periodo_academico')
+    .select('id, codigo, anio')
+    .eq('id', periodoId)
+    .maybeSingle();
+  if (errorPeriodo) return { error: { status: 500, body: { error: errorPeriodo.message } } };
+  if (!periodo) return { error: { status: 404, body: { error: 'Período no encontrado' } } };
+
+  const { data: campania, error: errorCampania } = await supabase
+    .from('campania_evaluacion')
+    .select('id')
+    .eq('periodo_academico_id', periodo.id)
+    .in('estado', ['BORRADOR', 'ABIERTA'])
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (errorCampania) return { error: { status: 500, body: { error: errorCampania.message } } };
+  if (!campania) {
+    return {
+      error: {
+        status: 409,
+        body: { error: `No hay una campaña de evaluación abierta para el período "${periodo.codigo}". Ábrela antes de cargar encuestas.` },
+      },
+    };
+  }
+
+  return { periodo, campania };
+}
+
 // POST /api/cargas — multipart/form-data: file (csv) + periodo_id
 //   + tipo='virtual' + curso_grupo_docente_id, para cargas de encuestas
 //   virtuales (CSV sin Programa/Docente/Curso por fila — ese contexto se
@@ -110,28 +147,8 @@ export async function subirCarga(req, res) {
     if (!cgd) return res.status(404).json({ error: 'curso_grupo_docente no encontrado' });
   }
 
-  const { data: periodo, error: errorPeriodo } = await supabase
-    .from('periodo_academico')
-    .select('id, codigo, anio')
-    .eq('id', periodo_id)
-    .maybeSingle();
-  if (errorPeriodo) return res.status(500).json({ error: errorPeriodo.message });
-  if (!periodo) return res.status(404).json({ error: 'Período no encontrado' });
-
-  const { data: campania, error: errorCampania } = await supabase
-    .from('campania_evaluacion')
-    .select('id')
-    .eq('periodo_academico_id', periodo.id)
-    .in('estado', ['BORRADOR', 'ABIERTA'])
-    .order('id', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (errorCampania) return res.status(500).json({ error: errorCampania.message });
-  if (!campania) {
-    return res.status(409).json({
-      error: `No hay una campaña de evaluación abierta para el período "${periodo.codigo}". Ábrela antes de cargar encuestas.`,
-    });
-  }
+  const { periodo, campania, error: errorPeriodoCampania } = await resolverPeriodoYCampaniaAbierta(periodo_id);
+  if (errorPeriodoCampania) return res.status(errorPeriodoCampania.status).json(errorPeriodoCampania.body);
 
   let filas;
   try {
@@ -170,6 +187,189 @@ export async function subirCarga(req, res) {
     // rechazada sin manejar.
     console.error(`[carga ${carga.id}] error no manejado en background:`, err);
   });
+}
+
+// POST /api/cargas/lote-virtual — multipart/form-data: file (.zip) + periodo_id.
+// Carga por lote de encuestas virtuales: el ZIP trae varios CSV, cada uno
+// con SU PROPIO docente/curso (detectado del nombre del archivo, igual que
+// en la subida individual) -- a diferencia de subirCarga (tipo=virtual),
+// acá NO se recibe curso_grupo_docente_id de antemano porque cada archivo
+// puede resolver a uno distinto. Es un endpoint propio (no una rama más
+// dentro de subirCarga) porque el contrato es genuinamente distinto: ahí
+// el cliente ya resolvió el contexto ANTES de subir; acá el servidor lo
+// resuelve por archivo, DESPUÉS de recibir el ZIP.
+//
+// Responde 202 apenas terminó de leer el ZIP y registrar una fila de
+// carga_csv por cada CSV encontrado (todas comparten lote_id) -- el
+// procesamiento real (detectar contexto + importar filas) sigue en
+// background, un archivo a la vez. El cliente hace polling a
+// GET /api/cargas/lote/:loteId para el progreso "archivo X de N".
+export async function subirLoteVirtual(req, res) {
+  const { periodo_id: periodoId } = req.body;
+  const zip = req.file;
+
+  if (!periodoId) return res.status(400).json({ error: 'Falta el parámetro periodo_id' });
+  if (!zip) return res.status(400).json({ error: 'No se recibió ningún archivo ZIP' });
+
+  const { periodo, campania, error: errorPeriodoCampania } = await resolverPeriodoYCampaniaAbierta(periodoId);
+  if (errorPeriodoCampania) return res.status(errorPeriodoCampania.status).json(errorPeriodoCampania.body);
+
+  let archivos;
+  let ignorados;
+  try {
+    ({ archivos, ignorados } = extraerCsvsDeZip(zip.buffer));
+  } catch (err) {
+    return res.status(400).json({ error: `No se pudo leer el ZIP: ${err.message}` });
+  }
+  if (archivos.length === 0) {
+    return res.status(400).json({ error: 'El ZIP no contiene ningún archivo .csv.' });
+  }
+
+  const loteId = randomUUID();
+  const nombreLote = zip.originalname.replace(/\.zip$/i, '');
+
+  // Primera pasada, sincrónica: parsear cada CSV y validar sus columnas. Un
+  // archivo mal formado acá es un error real de ARCHIVO (no de contexto) --
+  // se registra de una con estado='error' y nunca entra a la cola de
+  // background: no tiene sentido gastar una consulta de detectarContextoVirtual
+  // en un archivo que de todos modos no se puede procesar. "Si un archivo del
+  // lote falla, el resto continúa" -- por eso este for nunca corta ni hace
+  // return ante un archivo individual malo.
+  const filasPorProcesar = []; // [{ carga, filas, nombreArchivo }] -- los que sí se pudieron leer
+  const cargasCreadas = [];
+
+  for (const archivo of archivos) {
+    let filas = [];
+    let errorLectura = null;
+    try {
+      filas = parse(archivo.contenido, { columns: true, skip_empty_lines: true, trim: true, bom: true });
+      if (filas.length === 0) {
+        errorLectura = 'El archivo CSV no contiene filas.';
+      } else {
+        const faltantes = COLUMNAS_ESPERADAS_VIRTUAL.filter((c) => !Object.keys(filas[0]).includes(c));
+        if (faltantes.length > 0) errorLectura = `Faltan columnas requeridas en el CSV: ${faltantes.join(', ')}`;
+      }
+    } catch (err) {
+      errorLectura = `CSV inválido: ${err.message}`;
+    }
+
+    const { data: carga, error: errorCarga } = await supabase
+      .from('carga_csv')
+      .insert({
+        campania_id: campania.id,
+        archivo_nombre: archivo.nombreArchivo,
+        filas_leidas: errorLectura ? 0 : filas.length,
+        estado: errorLectura ? 'error' : 'procesando',
+        mensaje_error: errorLectura,
+        modalidad_carga: 'virtual',
+        lote_id: loteId,
+        nombre_lote: nombreLote,
+      })
+      .select()
+      .single();
+    if (errorCarga) return res.status(500).json({ error: errorCarga.message });
+
+    cargasCreadas.push(carga);
+    if (!errorLectura) filasPorProcesar.push({ carga, filas, nombreArchivo: archivo.nombreArchivo });
+  }
+
+  res.status(202).json({
+    lote_id: loteId,
+    nombre_lote: nombreLote,
+    total_archivos: cargasCreadas.length,
+    ignorados,
+    cargas: cargasCreadas,
+  });
+
+  procesarLoteVirtualEnBackground({ filasPorProcesar, periodo, campania, nombreLote }).catch((err) => {
+    console.error(`[lote ${loteId}] error no manejado en background:`, err);
+  });
+}
+
+// Procesa los CSV que sí se pudieron leer, UNO A LA VEZ (nunca en paralelo
+// -- mismo espíritu que el for secuencial de importarFilasCsvVirtual dentro
+// de un solo archivo, ahora un nivel más arriba). Por cada uno:
+//
+//   1. Detecta contexto (detectarContextoVirtual, SIN TOCAR esa función).
+//   2. Si no alcanza confianza suficiente para un curso_grupo_docente único
+//      -- el archivo queda 'pendiente_revision', SIN insertar ninguna fila,
+//      y el loop sigue con el siguiente. Esto es DISTINTO de un error real
+//      de archivo (ya filtrado antes, en subirLoteVirtual): acá el CSV está
+//      bien, solo falta que un humano confirme el docente/curso -- igual
+//      que ya pasa hoy en la subida individual ("Editar datos"). La vía
+//      para resolverlo es volver a subir ESE archivo por separado en
+//      /configuracion/carga/subir-virtual, no una confirmación a mitad del
+//      lote (que rompería "si uno falla, el resto continúa" para bloquear
+//      TODO el lote por una sola detección dudosa).
+//   3. Si sí hay confianza, cruza el programa detectado contra el nombre
+//      del lote (advertenciaProgramaZip) -- señal de alerta, nunca bloqueo
+//      -- y reutiliza procesarCargaEnBackground TAL CUAL (misma función que
+//      ya usa la subida individual) para insertar las filas.
+async function procesarLoteVirtualEnBackground({ filasPorProcesar, periodo, campania, nombreLote }) {
+  for (const { carga, filas, nombreArchivo } of filasPorProcesar) {
+    let deteccion;
+    try {
+      deteccion = await detectarContextoVirtual(nombreArchivo);
+    } catch (err) {
+      await supabase
+        .from('carga_csv')
+        .update({ estado: 'error', mensaje_error: `Error detectando contexto: ${err.message}` })
+        .eq('id', carga.id);
+      continue;
+    }
+
+    if (deteccion.badge !== 'success' || !deteccion.curso_grupo_docente) {
+      await supabase
+        .from('carga_csv')
+        .update({
+          estado: 'pendiente_revision',
+          motivo_pendiente: deteccion.motivos.join(' ') || 'La detección automática no alcanzó confianza suficiente.',
+        })
+        .eq('id', carga.id);
+      continue;
+    }
+
+    await procesarCargaEnBackground({
+      esVirtual: true,
+      filas,
+      periodo,
+      campania,
+      carga,
+      cursoGrupoDocenteId: deteccion.curso_grupo_docente.curso_grupo_docente_id,
+    });
+
+    // Se escribe DESPUÉS de procesarCargaEnBackground a propósito: su propio
+    // update final deja advertencias=null (importarFilasCsvVirtual siempre
+    // devuelve advertencias: [] -- no hay otra clase de advertencia posible
+    // en el pipeline virtual todavía), así que escribir esto antes quedaría
+    // pisado por ese update.
+    const advertenciaPrograma = advertenciaProgramaZip(nombreLote, deteccion.curso_grupo_docente.programa);
+    if (advertenciaPrograma) {
+      await supabase
+        .from('carga_csv')
+        .update({ advertencias: [{ fila: null, mensaje: advertenciaPrograma }] })
+        .eq('id', carga.id);
+    }
+  }
+}
+
+// GET /api/cargas/lote/:loteId — todas las carga_csv de un lote (ZIP),
+// mismo shape que listarCargasPorCampania -- el frontend calcula "archivo X
+// de N" contando cuántas ya llegaron a un estado final, y arma el resumen
+// (completados / con error / pendientes de revisión) sin necesitar un
+// endpoint de agregación aparte.
+export async function obtenerLote(req, res) {
+  const { loteId } = req.params;
+
+  const { data, error } = await supabase
+    .from('carga_csv')
+    .select('id, archivo_nombre, filas_leidas, filas_procesadas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, motivo_pendiente, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga, lote_id, nombre_lote')
+    .eq('lote_id', loteId)
+    .order('id', { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data || data.length === 0) return res.status(404).json({ error: 'Lote no encontrado' });
+
+  res.json({ lote_id: loteId, nombre_lote: data[0].nombre_lote, cargas: data });
 }
 
 // GET /api/cargas/:id — estado y progreso de UNA carga puntual. Pensado
