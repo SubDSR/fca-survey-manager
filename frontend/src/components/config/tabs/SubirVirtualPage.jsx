@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import JSZip from 'jszip';
 import {
   ArrowLeft, ArrowRight, UploadCloud, FileText, AlertCircle, AlertTriangle, Loader2,
   CheckCircle2, XCircle, Ban, Layers, User, Building2, BookOpen, Users, GraduationCap,
-  Pencil, RefreshCw, Eye,
+  Pencil, RefreshCw, Eye, Archive,
 } from 'lucide-react';
 import { api } from '../../../services/api.js';
 import DataTable from '../../common/DataTable.jsx';
@@ -40,6 +41,19 @@ function formatearTamano(bytes) {
 // reabre el MISMO selector manual (Docente -> Curso) que ya existía en la
 // versión anterior, no un editor de texto libre: la detección solo
 // PRELLENA ese selector, nunca inserta nada por sí sola.
+//
+// El dropzone también acepta un .zip con varios CSV virtuales (carga por
+// lote, ver tarea correspondiente) -- SIN tocar nada del flujo de un solo
+// .csv de arriba: es una rama enteramente aparte (stage 'preview-lote' /
+// 'procesando-lote' / 'resultado-lote') que reutiliza el mismo dropzone,
+// pero cada CSV dentro del ZIP detecta su PROPIO docente/curso en el
+// servidor (backend/src/controllers/cargas.js, subirLoteVirtual) -- acá no
+// hay selector manual por archivo: si la detección de alguno no alcanza
+// confianza suficiente, ese archivo queda "pendiente de revisión" en el
+// resumen final y se resuelve subiéndolo de nuevo, individual, por esta
+// misma página. El listado de archivos del ZIP en el preview (JSZip) es
+// solo un adelanto para el usuario -- el servidor vuelve a extraer y
+// filtrar el ZIP de forma autoritativa antes de procesar nada.
 export default function SubirVirtualPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -102,6 +116,12 @@ export default function SubirVirtualPage() {
   const [resultado, setResultado] = useState(null);
   const [cargaEnProceso, setCargaEnProceso] = useState(null);
   const [showAllRows, setShowAllRows] = useState(false);
+
+  // ---- Carga por lote (ZIP con varios CSV virtuales) -- estado propio,
+  // en paralelo al de arriba, para no tocar el flujo de un solo .csv. ----
+  const [pendingZipFile, setPendingZipFile] = useState(null);
+  const [zipEntradas, setZipEntradas] = useState([]); // [{ nombre, valido }] -- preview, solo informativo
+  const [loteEnProceso, setLoteEnProceso] = useState(null); // respuesta de subirLoteVirtual / obtenerLote
 
   // ---- Detección automática de contexto (a partir del nombre del archivo) ----
   const [deteccion, setDeteccion] = useState(null); // respuesta cruda de detectar-contexto-virtual
@@ -233,10 +253,46 @@ export default function SubirVirtualPage() {
     }
   };
 
-  const handleFile = (file) => {
-    if (!file.name.toLowerCase().endsWith('.csv')) {
+  // Adelanto informativo del contenido del ZIP (JSZip, client-side) para el
+  // preview "1. Archivos detectados en el lote" -- el filtro acá es un
+  // espejo best-effort del real (extraerCsvsDeZip en el backend), que es el
+  // que de verdad decide qué se procesa cuando se confirma la carga.
+  const handleZipFile = async (file) => {
+    setPendingZipFile(file);
+    setPendingFileName(file.name);
+    setZipEntradas([]);
+    setLoteEnProceso(null);
+    setStage('preview-lote');
+
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const entradas = [];
+      zip.forEach((rutaRelativa, entry) => {
+        if (entry.dir) return;
+        const base = rutaRelativa.split('/').pop();
+        if (!base || base.startsWith('.') || rutaRelativa.includes('__MACOSX/')) return;
+        entradas.push({ nombre: rutaRelativa, valido: base.toLowerCase().endsWith('.csv') });
+      });
+      setZipEntradas(entradas);
+      if (entradas.filter((e) => e.valido).length === 0) {
+        setStage('error');
+        setErrorMessage('El ZIP no contiene ningún archivo .csv.');
+      }
+    } catch (err) {
       setStage('error');
-      setErrorMessage(`"${file.name}" no es un archivo CSV válido. Solo se aceptan archivos .csv.`);
+      setErrorMessage(`No se pudo leer el ZIP: ${err.message}`);
+    }
+  };
+
+  const handleFile = (file) => {
+    const nombre = file.name.toLowerCase();
+    if (nombre.endsWith('.zip')) {
+      handleZipFile(file);
+      return;
+    }
+    if (!nombre.endsWith('.csv')) {
+      setStage('error');
+      setErrorMessage(`"${file.name}" no es un archivo válido. Solo se aceptan archivos .csv o .zip.`);
       return;
     }
     const reader = new FileReader();
@@ -274,6 +330,9 @@ export default function SubirVirtualPage() {
     setVirtualDocente(null);
     setVirtualCurso(null);
     setEditandoContexto(false);
+    setPendingZipFile(null);
+    setZipEntradas([]);
+    setLoteEnProceso(null);
   };
 
   const confirmUpload = async () => {
@@ -322,7 +381,50 @@ export default function SubirVirtualPage() {
     return () => { cancelado = true; clearInterval(intervalo); };
   }, [stage, cargaEnProcesoId]);
 
+  const confirmUploadLote = async () => {
+    if (!pendingZipFile || !periodo) return;
+    setStage('uploading');
+    const { ok, status, data } = await api.cargas.subirLoteVirtual(periodo.id, pendingZipFile);
+
+    if (status === 400 || status === 404 || status === 409) {
+      setStage('error');
+      setErrorMessage((data && data.error) || 'No se pudo subir el ZIP.');
+      return;
+    }
+    if (!ok) {
+      setStage('error');
+      setErrorMessage((data && data.error) || 'Error del servidor al procesar el lote.');
+      return;
+    }
+
+    // 202: una fila de carga_csv por archivo, todas en 'procesando' -- de
+    // acá en más, polling a GET /api/cargas/lote/:loteId (mismo espíritu
+    // que el polling de una carga individual, pero contando archivos en vez
+    // de filas).
+    setLoteEnProceso(data);
+    setStage('procesando-lote');
+  };
+
+  const loteId = loteEnProceso?.lote_id;
+  useEffect(() => {
+    if (stage !== 'procesando-lote' || !loteId) return undefined;
+    let cancelado = false;
+
+    const consultar = async () => {
+      const { ok, data } = await api.cargas.obtenerLote(loteId);
+      if (cancelado || !ok) return;
+      setLoteEnProceso(data);
+      const todasTerminadas = data.cargas.every((c) => c.estado !== 'procesando');
+      if (todasTerminadas) setStage('resultado-lote');
+    };
+
+    consultar();
+    const intervalo = setInterval(consultar, 3000);
+    return () => { cancelado = true; clearInterval(intervalo); };
+  }, [stage, loteId]);
+
   const erroresPorFila = useMemo(() => new Map((resultado?.errores || []).map((e) => [e.fila, e.mensaje])), [resultado]);
+  const archivosValidosZip = useMemo(() => zipEntradas.filter((e) => e.valido), [zipEntradas]);
 
   const columnasTabla = stage === 'resultado'
     ? [{ key: '_estado', label: 'Estado' }, ...COLUMNAS_TABLA]
@@ -428,12 +530,15 @@ export default function SubirVirtualPage() {
                 onDrop={onDrop}
               >
                 <div className={styles.dropzoneIconBox}><UploadCloud size={24} strokeWidth={1.8} /></div>
-                <p className={styles.dropzoneTitle}>Arrastra tu archivo CSV aquí</p>
+                <p className={styles.dropzoneTitle}>Arrastra tu archivo CSV o ZIP aquí</p>
                 <p className={styles.dropzoneText}>
                   o <button type="button" className={styles.dropzoneLink} onClick={triggerFilePicker}>selecciona desde tu equipo</button>
                 </p>
-                <p className={styles.dropzoneHint}>Solo archivos .csv · Máx. 50 MB — el docente, curso, ciclo y sección se detectan automáticamente del nombre del archivo.</p>
-                <input ref={fileInputRef} type="file" accept=".csv" className={styles.hiddenFileInput} onChange={onFileInputChange} />
+                <p className={styles.dropzoneHint}>
+                  Un .csv (máx. 50 MB) o un .zip con varios .csv (máx. 200 MB) — el docente, curso, ciclo y sección se detectan
+                  automáticamente del nombre de cada archivo.
+                </p>
+                <input ref={fileInputRef} type="file" accept=".csv,.zip" className={styles.hiddenFileInput} onChange={onFileInputChange} />
               </div>
             </div>
           )}
@@ -477,6 +582,131 @@ export default function SubirVirtualPage() {
                   </span>
                 </div>
               </div>
+            );
+          })()}
+
+          {stage === 'preview-lote' && (
+            <>
+              <div className={styles.card}>
+                <div className={layoutStyles.detectionHeaderRow}>
+                  <div>
+                    <h2 className={styles.cardTitle}>1. Archivos detectados en el lote</h2>
+                    <p className={styles.cardSubtitle}>
+                      {archivosValidosZip.length} archivo{archivosValidosZip.length === 1 ? '' : 's'} .csv en &quot;{pendingFileName}&quot;.
+                      Cada uno detectará su propio docente y curso al procesarse — no hace falta confirmarlos uno por uno acá.
+                    </p>
+                  </div>
+                  <div className={layoutStyles.detectionHeaderActions}>
+                    <span className={`${layoutStyles.detectionBadge} ${layoutStyles.detectionBadgeSuccess}`}>
+                      <Archive size={13} /> {archivosValidosZip.length} archivo{archivosValidosZip.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+                <div className={layoutStyles.loteFileList}>
+                  {zipEntradas.map((e) => (
+                    <div key={e.nombre} className={`${layoutStyles.loteFileRow} ${!e.valido ? layoutStyles.loteFileRowIgnorado : ''}`}>
+                      <FileText size={14} />
+                      <span className={layoutStyles.loteFileName}>{e.nombre}</span>
+                      {!e.valido && <span className={layoutStyles.loteFileIgnoradoTag}>Se ignorará (no es .csv)</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.previewActions}>
+                <button type="button" className={styles.btnSecondary} onClick={resetUpload}>Cancelar</button>
+                <button
+                  type="button"
+                  className={styles.confirmBtn}
+                  onClick={confirmUploadLote}
+                  disabled={archivosValidosZip.length === 0}
+                >
+                  Continuar con la carga del lote <ArrowRight size={16} style={{ verticalAlign: 'text-bottom' }} />
+                </button>
+              </div>
+            </>
+          )}
+
+          {stage === 'procesando-lote' && loteEnProceso && (() => {
+            const total = loteEnProceso.cargas.length;
+            const terminadas = loteEnProceso.cargas.filter((c) => c.estado !== 'procesando').length;
+            const porcentaje = total > 0 ? Math.round((terminadas / total) * 100) : 0;
+            const actual = Math.min(terminadas + 1, total);
+            return (
+              <div className={styles.card}>
+                <div className={styles.emptyCampaignBox}>
+                  <Loader2 size={20} className={styles.spin} />
+                  <span>Procesando archivo {actual} de {total}…</span>
+                  <div className={layoutStyles.progressBarTrack}>
+                    <div className={layoutStyles.progressBarFill} style={{ width: `${porcentaje}%` }} />
+                  </div>
+                  <span className={layoutStyles.progressCaption}>
+                    {terminadas} de {total} archivos procesados ({porcentaje}%)
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {stage === 'resultado-lote' && loteEnProceso && (() => {
+            const cargas = loteEnProceso.cargas;
+            const completados = cargas.filter((c) => c.estado === 'completado' || c.estado === 'completado_con_errores');
+            const conError = cargas.filter((c) => c.estado === 'error');
+            const pendientesRevision = cargas.filter((c) => c.estado === 'pendiente_revision');
+            const huboProblemas = conError.length > 0 || pendientesRevision.length > 0;
+            return (
+              <>
+                <div className={huboProblemas ? styles.warningBanner : styles.successBanner}>
+                  {huboProblemas ? <AlertTriangle size={18} className={styles.warningIcon} /> : <CheckCircle2 size={18} className={styles.successIcon} />}
+                  <span className={huboProblemas ? styles.warningText : styles.successText}>
+                    {completados.length} completado{completados.length === 1 ? '' : 's'}
+                    {conError.length > 0 && `, ${conError.length} con error`}
+                    {pendientesRevision.length > 0 && `, ${pendientesRevision.length} pendiente${pendientesRevision.length === 1 ? '' : 's'} de revisión`}
+                    {' '}de {cargas.length} archivo{cargas.length === 1 ? '' : 's'}.
+                  </span>
+                </div>
+
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle} style={{ marginBottom: 14 }}>
+                    Resultado del lote &quot;{loteEnProceso.nombre_lote}&quot;
+                  </h2>
+                  <div className={layoutStyles.loteResultList}>
+                    {cargas.map((c) => (
+                      <div key={c.id} className={layoutStyles.loteResultRow}>
+                        {c.estado === 'error' && <XCircle size={16} className={layoutStyles.loteResultIconError} />}
+                        {c.estado === 'pendiente_revision' && <AlertTriangle size={16} className={layoutStyles.loteResultIconPendiente} />}
+                        {(c.estado === 'completado' || c.estado === 'completado_con_errores') && <CheckCircle2 size={16} className={layoutStyles.loteResultIconOk} />}
+                        <div className={layoutStyles.loteResultInfo}>
+                          <span className={layoutStyles.loteResultName}>{c.archivo_nombre}</span>
+                          {c.estado === 'error' && (
+                            <span className={layoutStyles.loteResultMotivo}>{c.mensaje_error}</span>
+                          )}
+                          {c.estado === 'pendiente_revision' && (
+                            <span className={layoutStyles.loteResultMotivo}>
+                              {c.motivo_pendiente} Vuelve a subir este archivo por separado para resolverlo.
+                            </span>
+                          )}
+                          {(c.estado === 'completado' || c.estado === 'completado_con_errores') && (
+                            <span className={layoutStyles.loteResultMotivoOk}>
+                              +{c.filas_insertadas.toLocaleString('es-PE')} registros
+                              {c.filas_error > 0 && ` · ${c.filas_error} con error`}
+                            </span>
+                          )}
+                          {c.advertencias && c.advertencias.length > 0 && (
+                            <span className={layoutStyles.loteResultAdvertencia}>
+                              {c.advertencias.map((a) => a.mensaje).join(' ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.previewActions}>
+                  <button type="button" className={styles.btnSecondary} onClick={() => navigate('/configuracion/carga')}>Volver al historial</button>
+                  <button type="button" className={styles.confirmBtn} onClick={resetUpload}>Subir otro archivo</button>
+                </div>
+              </>
             );
           })()}
 

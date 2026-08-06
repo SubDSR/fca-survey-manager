@@ -160,6 +160,20 @@ export const api = {
       return request(`${BASE_URL}/api/cargas`, { method: 'POST', body: formData });
     },
     detectarContextoVirtual: (nombreArchivo) => request(`${BASE_URL}/api/cargas/detectar-contexto-virtual?${new URLSearchParams({ nombre_archivo: nombreArchivo })}`),
+    // Carga por lote (ZIP) de encuestas virtuales -- cada CSV interno
+    // detecta su propio docente/curso en el servidor, por eso a diferencia
+    // de subirVirtual() acá no se manda curso_grupo_docente_id.
+    subirLoteVirtual: (periodoId, file) => {
+      const formData = new FormData();
+      formData.append('periodo_id', periodoId);
+      formData.append('file', file);
+      return request(`${BASE_URL}/api/cargas/lote-virtual`, { method: 'POST', body: formData });
+    },
+    // Polling de un lote en curso (subirLoteVirtual() responde apenas
+    // registró una fila de carga_csv por archivo, todas en 'procesando') --
+    // esto es lo que hay que consultar repetidamente hasta que todas las
+    // cargas del lote lleguen a un estado final.
+    obtenerLote: (loteId) => request(`${BASE_URL}/api/cargas/lote/${loteId}`),
     // Polling de una carga en curso (subir() ahora responde apenas se
     // registra, con estado='procesando' — esto es lo que hay que consultar
     // repetidamente hasta que estado sea un valor final).

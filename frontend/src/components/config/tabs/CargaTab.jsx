@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import {
+  useEffect, useState, useCallback, useMemo,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Calendar, AlertCircle, FileText, UploadCloud, CheckCircle2, Layers,
   Eye, EyeOff, Trash2, Loader2, ChevronDown, ChevronUp,
-  Pencil, FileCheck2, Monitor, FileSpreadsheet, Info, List, ChevronRight,
+  Pencil, FileCheck2, Monitor, FileSpreadsheet, Info, List, ChevronRight, Archive,
 } from 'lucide-react';
 import Modal from '../../common/Modal.jsx';
 import { api } from '../../../services/api.js';
@@ -218,6 +220,7 @@ export default function CargaTab() {
   const [totalAcumulado, setTotalAcumulado] = useState(0);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [expandedLoteId, setExpandedLoteId] = useState(null);
   const [visibilityPendingId, setVisibilityPendingId] = useState(null);
 
   const refreshHistory = useCallback(async (campaniaId) => {
@@ -321,6 +324,191 @@ export default function CargaTab() {
     const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
   }, [toast]);
+
+  // Agrupa las cargas que comparten lote_id (subida por ZIP, ver tarea
+  // "carga por lote") en una sola entrada de tipo 'lote' -- las que no
+  // tienen lote_id (subida individual, el caso de siempre) se muestran tal
+  // cual, en el mismo orden por fecha_carga que ya trae uploads. El grupo
+  // aparece en la posición de su carga más reciente (uploads ya viene
+  // ordenado por fecha_carga descendente).
+  const itemsHistorial = useMemo(() => {
+    const items = [];
+    const indicePorLote = new Map();
+    for (const u of uploads) {
+      if (!u.lote_id) {
+        items.push({ tipo: 'individual', carga: u });
+        continue;
+      }
+      if (indicePorLote.has(u.lote_id)) {
+        items[indicePorLote.get(u.lote_id)].cargas.push(u);
+        continue;
+      }
+      indicePorLote.set(u.lote_id, items.length);
+      items.push({ tipo: 'lote', loteId: u.lote_id, nombreLote: u.nombre_lote, cargas: [u] });
+    }
+    return items;
+  }, [uploads]);
+
+  // Una fila de carga individual -- exactamente el mismo diseño de siempre,
+  // ahora extraído a función para poder reutilizarlo tanto para cargas
+  // sueltas (sin lote_id) como para cada carga dentro de un grupo de lote
+  // expandido (ver renderLoteGroup). Único agregado: si estado es 'error'
+  // o 'pendiente_revision' (solo alcanzables desde una carga por lote, ver
+  // cargas.js) se muestra el motivo inline -- si no, quedarían mostrando
+  // "+0 registros" sin ninguna pista de qué pasó.
+  const renderUploadRow = (u) => {
+    const tieneDetalle = u.filas_omitidas > 0 || u.filas_error > 0;
+    const expanded = expandedId === u.id;
+    const bloqueadaPorPlazo = haPasadoElPlazoDeEliminacion(u.fecha_carga);
+    return (
+      <div key={u.id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg overflow-hidden">
+        <div className={`p-3 flex items-start gap-3 ${!u.visible ? 'opacity-60' : ''}`}>
+          <div className="bg-surface-container p-2 rounded text-on-surface-variant shrink-0 mt-0.5">
+            <FileText size={16} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="font-medium text-sm text-on-surface truncate max-w-[150px]" title={u.archivo_nombre}>{u.archivo_nombre}</span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${u.modalidad_carga === 'virtual' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
+                {u.modalidad_carga === 'virtual' ? 'Virtual' : 'Física'}
+              </span>
+              {u.estado === 'procesando' && (
+                <span className={layoutStyles.historyProcesandoBadge}>
+                  <Loader2 size={9} className={styles.spin} /> En proceso
+                </span>
+              )}
+              {u.estado === 'pendiente_revision' && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider bg-tertiary-container/30 text-tertiary">
+                  Pendiente de revisión
+                </span>
+              )}
+              {!u.visible && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant uppercase font-bold tracking-wider">Oculta</span>}
+            </div>
+            <div className="text-[11px] text-on-surface-variant leading-relaxed">
+              {formatDateTime(u.fecha_carga)}<br/>
+              {u.estado === 'procesando' && (
+                <span className="font-medium text-primary">
+                  {(u.filas_procesadas || 0).toLocaleString('es-PE')} de {u.filas_leidas.toLocaleString('es-PE')} filas procesadas…
+                </span>
+              )}
+              {u.estado === 'error' && <span className="text-error">{u.mensaje_error}</span>}
+              {u.estado === 'pendiente_revision' && <span className="text-tertiary">{u.motivo_pendiente}</span>}
+              {(u.estado === 'completado' || u.estado === 'completado_con_errores') && (
+                <>
+                  <span className="font-medium text-primary">+{u.filas_insertadas.toLocaleString('es-PE')} registros</span>
+                  {u.filas_omitidas > 0 && <span className="text-tertiary"> · {u.filas_omitidas} omitidas</span>}
+                  {u.filas_error > 0 && <span className="text-error"> · {u.filas_error} error</span>}
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 shrink-0">
+            {tieneDetalle && (
+              <button
+                type="button"
+                className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors"
+                onClick={() => setExpandedId(expanded ? null : u.id)}
+                aria-label="Ver detalle"
+              >
+                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            )}
+            <button
+              type="button"
+              className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors"
+              title={u.visible ? 'Ocultar carga' : 'Mostrar carga'}
+              onClick={() => toggleVisibilidad(u)}
+              disabled={visibilityPendingId === u.id}
+            >
+              {visibilityPendingId === u.id
+                ? <Loader2 size={14} className={styles.spin} />
+                : (u.visible ? <Eye size={14} /> : <EyeOff size={14} />)}
+            </button>
+            <button
+              type="button"
+              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              title={bloqueadaPorPlazo ? MENSAJE_PLAZO_ELIMINACION : 'Eliminar carga'}
+              disabled={bloqueadaPorPlazo}
+              onClick={() => {
+                if (bloqueadaPorPlazo) return;
+                setDeleteTarget(u);
+                setDeleteError('');
+              }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+        {expanded && (
+          <div className="bg-surface-container-high/30 border-t border-outline-variant/20 p-3 text-xs">
+            {u.filas_error > 0 && (
+              <div className="mb-3">
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-error-container/30 text-error mb-1">{u.filas_error} error{u.filas_error === 1 ? '' : 'es'}</span>
+                <ul className="pl-4 list-disc text-error/80 space-y-1">
+                  {(u.errores || []).map((e, i) => (
+                    <li key={i}>Fila {e.fila}: {e.mensaje}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {u.filas_omitidas > 0 && (
+              <div className="mb-3">
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-tertiary-container/30 text-tertiary mb-1">{u.filas_omitidas} omitida{u.filas_omitidas === 1 ? '' : 's'}</span>
+                <ul className="pl-4 list-disc text-on-surface-variant space-y-1">
+                  {(u.omitidas || []).map((o, i) => (
+                    <li key={i}>Fila {o.fila}: {o.mensaje}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {u.advertencias && u.advertencias.length > 0 && (
+              <div>
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-tertiary-container/30 text-tertiary mb-1">{u.advertencias.length} advertencia{u.advertencias.length === 1 ? '' : 's'}</span>
+                <ul className="pl-4 list-disc text-on-surface-variant space-y-1">
+                  {u.advertencias.map((a, i) => (
+                    <li key={i}>Fila {a.fila}: {a.mensaje}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Grupo de lote (ZIP) en el historial: una fila "📁 {nombre_lote} (N
+  // archivos)" desplegable -- adentro, cada carga se ve exactamente igual
+  // que una suelta (renderUploadRow), mismo botón eliminar/badge de estado.
+  const renderLoteGroup = (item) => {
+    const loteExpanded = expandedLoteId === item.loteId;
+    const completados = item.cargas.filter((c) => c.estado === 'completado' || c.estado === 'completado_con_errores').length;
+    const conProblemas = item.cargas.length - completados;
+    return (
+      <div key={item.loteId} className={layoutStyles.loteGroupRow}>
+        <button
+          type="button"
+          className={layoutStyles.loteGroupHeader}
+          onClick={() => setExpandedLoteId(loteExpanded ? null : item.loteId)}
+        >
+          <Archive size={16} className="text-[#2f6fb0] shrink-0" />
+          <span className={layoutStyles.loteGroupTitle}>
+            {item.nombreLote} ({item.cargas.length} archivo{item.cargas.length === 1 ? '' : 's'})
+          </span>
+          <span className={layoutStyles.loteGroupCount}>
+            {completados} completado{completados === 1 ? '' : 's'}
+            {conProblemas > 0 && ` · ${conProblemas} con problema${conProblemas === 1 ? '' : 's'}`}
+          </span>
+          {loteExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        {loteExpanded && (
+          <div className={layoutStyles.loteGroupChildren}>
+            {item.cargas.map((u) => renderUploadRow(u))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const irASubirCsv = () => navigate(`/configuracion/carga/subir-csv?periodo_id=${selectedPeriodId}`);
   const irASubirVirtual = () => navigate(`/configuracion/carga/subir-virtual?periodo_id=${selectedPeriodId}`);
@@ -625,120 +813,11 @@ export default function CargaTab() {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {uploads.length > 0 ? (
+              {itemsHistorial.length > 0 ? (
                 <div className="space-y-3">
-                  {uploads.map((u) => {
-                    const tieneDetalle = u.filas_omitidas > 0 || u.filas_error > 0;
-                    const expanded = expandedId === u.id;
-                    const bloqueadaPorPlazo = haPasadoElPlazoDeEliminacion(u.fecha_carga);
-                    return (
-                      <div key={u.id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg overflow-hidden">
-                        <div className={`p-3 flex items-start gap-3 ${!u.visible ? 'opacity-60' : ''}`}>
-                          <div className="bg-surface-container p-2 rounded text-on-surface-variant shrink-0 mt-0.5">
-                            <FileText size={16} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-medium text-sm text-on-surface truncate max-w-[150px]" title={u.archivo_nombre}>{u.archivo_nombre}</span>
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${u.modalidad_carga === 'virtual' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
-                                {u.modalidad_carga === 'virtual' ? 'Virtual' : 'Física'}
-                              </span>
-                              {u.estado === 'procesando' && (
-                                <span className={layoutStyles.historyProcesandoBadge}>
-                                  <Loader2 size={9} className={styles.spin} /> En proceso
-                                </span>
-                              )}
-                              {!u.visible && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant uppercase font-bold tracking-wider">Oculta</span>}
-                            </div>
-                            <div className="text-[11px] text-on-surface-variant leading-relaxed">
-                              {formatDateTime(u.fecha_carga)}<br/>
-                              {u.estado === 'procesando' ? (
-                                <span className="font-medium text-primary">
-                                  {(u.filas_procesadas || 0).toLocaleString('es-PE')} de {u.filas_leidas.toLocaleString('es-PE')} filas procesadas…
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="font-medium text-primary">+{u.filas_insertadas.toLocaleString('es-PE')} registros</span>
-                                  {u.filas_omitidas > 0 && <span className="text-tertiary"> · {u.filas_omitidas} omitidas</span>}
-                                  {u.filas_error > 0 && <span className="text-error"> · {u.filas_error} error</span>}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-1 shrink-0">
-                            {tieneDetalle && (
-                              <button
-                                type="button"
-                                className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors"
-                                onClick={() => setExpandedId(expanded ? null : u.id)}
-                                aria-label="Ver detalle"
-                              >
-                                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors"
-                              title={u.visible ? 'Ocultar carga' : 'Mostrar carga'}
-                              onClick={() => toggleVisibilidad(u)}
-                              disabled={visibilityPendingId === u.id}
-                            >
-                              {visibilityPendingId === u.id
-                                ? <Loader2 size={14} className={styles.spin} />
-                                : (u.visible ? <Eye size={14} /> : <EyeOff size={14} />)}
-                            </button>
-                            <button
-                              type="button"
-                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                              title={bloqueadaPorPlazo ? MENSAJE_PLAZO_ELIMINACION : 'Eliminar carga'}
-                              disabled={bloqueadaPorPlazo}
-                              onClick={() => {
-                                if (bloqueadaPorPlazo) return;
-                                setDeleteTarget(u);
-                                setDeleteError('');
-                              }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                        {expanded && (
-                          <div className="bg-surface-container-high/30 border-t border-outline-variant/20 p-3 text-xs">
-                            {u.filas_error > 0 && (
-                              <div className="mb-3">
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-error-container/30 text-error mb-1">{u.filas_error} error{u.filas_error === 1 ? '' : 'es'}</span>
-                                <ul className="pl-4 list-disc text-error/80 space-y-1">
-                                  {(u.errores || []).map((e, i) => (
-                                    <li key={i}>Fila {e.fila}: {e.mensaje}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {u.filas_omitidas > 0 && (
-                              <div className="mb-3">
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-tertiary-container/30 text-tertiary mb-1">{u.filas_omitidas} omitida{u.filas_omitidas === 1 ? '' : 's'}</span>
-                                <ul className="pl-4 list-disc text-on-surface-variant space-y-1">
-                                  {(u.omitidas || []).map((o, i) => (
-                                    <li key={i}>Fila {o.fila}: {o.mensaje}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {u.advertencias && u.advertencias.length > 0 && (
-                              <div>
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-tertiary-container/30 text-tertiary mb-1">{u.advertencias.length} advertencia{u.advertencias.length === 1 ? '' : 's'}</span>
-                                <ul className="pl-4 list-disc text-on-surface-variant space-y-1">
-                                  {u.advertencias.map((a, i) => (
-                                    <li key={i}>Fila {a.fila}: {a.mensaje}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {itemsHistorial.map((item) => (item.tipo === 'individual'
+                    ? renderUploadRow(item.carga)
+                    : renderLoteGroup(item)))}
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-sm text-on-surface-variant/70 text-center px-4">
