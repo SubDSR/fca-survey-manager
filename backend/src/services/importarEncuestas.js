@@ -358,13 +358,20 @@ async function resolverDocente({ nombreCsv, cacheDocentes }) {
   return { estado: 'resuelto', id: nuevo.id };
 }
 
-// Regla de es_carga_oficial (aprobada tras revisar fn_autoconsolidar_secciones,
-// que exige >=1 fila oficial Y >=1 dispersa por (docente,asignatura) para
-// actuar — nunca promueve una fila false a true, solo mapea):
+// Regla de es_carga_oficial:
 //   - Si es la PRIMERA fila que existe para este (docente, asignatura) en
 //     cualquier grupo/ciclo -> es_carga_oficial = true (alta legítima).
-//   - Si ya existe alguna -> la nueva nace false (probable sección dispersa);
-//     fn_autoconsolidar_secciones() la recogerá en su próxima corrida.
+//   - Si ya existe alguna -> la nueva nace false (probable sección dispersa)
+//     y dispara fn_detectar_revision_asignacion() (trigger AFTER INSERT en
+//     encuesta) -> queda en la cola de revisión humana (revision_asignacion,
+//     GET/POST /api/revisiones). ESTO es lo que la recoge, no
+//     fn_autoconsolidar_secciones() -- esa función existe (POST
+//     /api/catalogo/consolidar-secciones, solo bajo demanda, ver
+//     catalogo.js) pero es un mecanismo aparte, un redirect no destructivo
+//     para vistas de reporte que NO toca revision_asignacion ni resuelve
+//     esta incidencia (confirmado contra la BD real: las 34 secciones que
+//     mapeó su única corrida histórica, 2026-07-31, siguen todas
+//     'pendiente' en revision_asignacion hoy).
 // Devuelve { id, advertencia? }.
 //
 // Cacheado en memoria por (grupoId,asignaturaId,docenteId): esta tupla es
@@ -436,7 +443,7 @@ async function resolverCursoGrupoDocente({ grupoId, asignaturaId, docenteId, nom
       advertencia:
         `Sección nueva marcada como dispersa (es_carga_oficial=false): docente "${nombreDocenteCsv}", ` +
         `curso "${nombreCurso}" — ya existía otra sección oficial para este mismo docente+curso. ` +
-        'Revisar si fn_autoconsolidar_secciones() la consolidó correctamente.',
+        'Va a quedar en la cola de revisión (GET /api/revisiones) para decidir si se reasigna, se confirma o se descarta.',
     };
     cacheCursoGrupoDocente.set(clave, resultado);
     return resultado;

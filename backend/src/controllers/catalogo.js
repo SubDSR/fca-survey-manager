@@ -151,3 +151,40 @@ export async function listarCursoGrupoDocenteResidual(req, res) {
 
   res.json(residuales);
 }
+
+// POST /api/catalogo/consolidar-secciones — corre fn_autoconsolidar_secciones()
+// bajo demanda (p_solo_faltantes=true siempre: solo mapea secciones
+// dispersas que TODAVÍA no tienen fila en curso_grupo_docente_consolidacion,
+// nunca reescribe ni borra un mapeo ya existente, automático o manual).
+//
+// LO QUE ESTO NO HACE (investigado antes de decidir si automatizarla —
+// ver docs/plans/, tarea de integración de fn_autoconsolidar_secciones):
+// no toca revision_asignacion para nada, ni la lee ni la actualiza. Son
+// dos mecanismos independientes que resultan mirar el mismo problema
+// (secciones dispersas) desde ángulos distintos:
+//   - curso_grupo_docente_consolidacion / esta función: redirect NO
+//     destructivo solo para las vistas de reporte (v_encuesta_seccion_efectiva
+//     y lo que se arma sobre ella) -- no mueve ninguna encuesta real, elige
+//     el destino con una heurística ciega ("bucket con menos encuestas").
+//   - revision_asignacion: cola de revisión HUMANA -- "reasignar" sí mueve
+//     encuesta.curso_grupo_docente_id de verdad, "confirmar"/"descartar"
+//     son decisiones explícitas de una persona.
+// Confirmado contra la BD real: las 34 filas que ya dejó la única corrida
+// histórica de esta función (2026-07-31, antes de que existiera
+// revision_asignacion) siguen TODAS con su incidencia en estado 'pendiente'
+// en revision_asignacion -- correr esta función no las resuelve, ni las
+// toca. Por eso NO se invoca automáticamente en importarFilasCsv: hacerlo
+// aplicaría un redirect silencioso de reportes a una sección que un humano
+// todavía no revisó por el canal que sí importa (revision_asignacion),
+// pudiendo dar la impresión de que "ya se resolvió" cuando nadie decidió
+// nada. Se deja solo como acción manual explícita.
+export async function consolidarSecciones(req, res) {
+  const { data, error } = await supabase.rpc('fn_autoconsolidar_secciones', { p_solo_faltantes: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({
+    nuevas_consolidaciones: data,
+    nota: 'Esto solo actualiza redirects de reportes (curso_grupo_docente_consolidacion). '
+      + 'No resuelve ni modifica ninguna incidencia de revision_asignacion -- '
+      + 'esas siguen requiriendo revisión manual vía GET /api/revisiones.',
+  });
+}
