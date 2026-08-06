@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import {
-  listarCargasPorCampania, subirCarga, cambiarVisibilidad, eliminarCarga,
+  listarCargasPorCampania, subirCarga, obtenerCarga, cambiarVisibilidad, eliminarCarga,
   listarPendientesDeCarga, resolverPendienteCarga, detectarContextoVirtualHandler,
 } from '../controllers/cargas.js';
 
@@ -59,10 +59,12 @@ router.get('/', listarCargasPorCampania);
  *                 type: integer
  *                 description: Requerido cuando tipo=virtual — fija el contexto de todo el archivo.
  *     responses:
- *       201:
- *         description: Carga procesada sin errores
- *       422:
- *         description: Carga procesada pero todas las filas fallaron
+ *       202:
+ *         description: >
+ *           Archivo validado y carga registrada con estado='procesando' — el
+ *           procesamiento real sigue en background. Hacer polling a
+ *           GET /api/cargas/{id} hasta que estado sea 'completado',
+ *           'completado_con_errores' o 'error'.
  *       400:
  *         description: Archivo o columnas inválidas
  *       404:
@@ -94,6 +96,26 @@ router.post('/', upload.single('file'), subirCarga);
  *         description: Falta nombre_archivo
  */
 router.get('/detectar-contexto-virtual', detectarContextoVirtualHandler);
+
+/**
+ * @swagger
+ * /api/cargas/{id}:
+ *   get:
+ *     summary: Estado y progreso de una carga puntual (para hacer polling mientras estado='procesando')
+ *     tags: [Cargas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Carga con filas_procesadas y estado actualizados
+ *       404:
+ *         description: Carga no encontrada
+ */
+router.get('/:id', obtenerCarga);
 
 /**
  * @swagger

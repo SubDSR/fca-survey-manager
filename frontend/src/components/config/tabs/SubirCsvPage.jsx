@@ -79,13 +79,19 @@ export default function SubirCsvPage() {
   }, [periodo]);
 
   // ---- Subida ----
-  const [stage, setStage] = useState('idle'); // idle | preview | uploading | resultado | error
+  // idle | preview | uploading | procesando | resultado | error
+  //   uploading  -> el POST está en vuelo (subiendo el archivo).
+  //   procesando -> el backend ya registró la carga (estado='procesando')
+  //                 y sigue insertando en background; acá se hace polling a
+  //                 GET /api/cargas/:id hasta que el estado sea final.
+  const [stage, setStage] = useState('idle');
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [pendingFile, setPendingFile] = useState(null);
   const [pendingFileName, setPendingFileName] = useState('');
   const [parsedRows, setParsedRows] = useState([]);
   const [resultado, setResultado] = useState(null);
+  const [cargaEnProceso, setCargaEnProceso] = useState(null);
 
   // ---- Pendientes de revisión (fuzzy matching, ver importarEncuestas.js) ----
   // pendientesPorFila: fila_numero -> [{ id, tipo, valor_csv, candidatos }],
@@ -159,6 +165,7 @@ export default function SubirCsvPage() {
     setParsedRows([]);
     setPendingFile(null);
     setResultado(null);
+    setCargaEnProceso(null);
   };
 
   const confirmUpload = async () => {
@@ -171,17 +178,57 @@ export default function SubirCsvPage() {
       setErrorMessage((data && data.error) || 'No se pudo subir el archivo.');
       return;
     }
-    if (!ok && status !== 422) {
+    if (!ok) {
       setStage('error');
       setErrorMessage((data && data.error) || 'Error del servidor al procesar la carga.');
       return;
     }
 
-    setResultado(data);
-    setPendientesPorFila(new Map());
-    setFilaResueltaComo(new Map());
-    setStage('resultado');
+    // 202: el archivo quedó validado y registrado (estado='procesando'), el
+    // insertado real sigue en background -- de acá en más se hace polling.
+    setCargaEnProceso(data);
+    setStage('procesando');
   };
+
+  // Polling mientras stage==='procesando'. Depende solo del id (no del
+  // objeto cargaEnProceso completo, que cambia en cada tick) para no
+  // reiniciar el intervalo en cada respuesta.
+  const cargaEnProcesoId = cargaEnProceso?.id;
+  useEffect(() => {
+    if (stage !== 'procesando' || !cargaEnProcesoId) return undefined;
+    let cancelado = false;
+
+    const consultar = async () => {
+      const { ok, data } = await api.cargas.obtener(cargaEnProcesoId);
+      if (cancelado || !ok) return;
+      setCargaEnProceso(data);
+
+      if (data.estado === 'procesando') return;
+
+      // 'error' cubre dos casos distintos que solo se distinguen por
+      // mensaje_error (ver procesarCargaEnBackground en el backend):
+      //   - mensaje_error presente: una excepción inesperada cortó el
+      //     import a mitad de camino -> banner de error genérico.
+      //   - mensaje_error ausente: el import terminó normal pero TODAS las
+      //     filas fallaron individualmente -> mismo detalle fila-por-fila
+      //     que 'completado_con_errores', para poder ver qué falló en cada
+      //     una (igual que el 422 de la versión síncrona anterior).
+      if (data.estado === 'error' && data.mensaje_error) {
+        setStage('error');
+        setErrorMessage(data.mensaje_error);
+        return;
+      }
+
+      setResultado(data);
+      setPendientesPorFila(new Map());
+      setFilaResueltaComo(new Map());
+      setStage('resultado');
+    };
+
+    consultar();
+    const intervalo = setInterval(consultar, 3000);
+    return () => { cancelado = true; clearInterval(intervalo); };
+  }, [stage, cargaEnProcesoId]);
 
   useEffect(() => {
     if (stage !== 'resultado' || !resultado || !resultado.filas_pendientes) return;
@@ -410,9 +457,30 @@ export default function SubirCsvPage() {
             {stage === 'uploading' && (
               <div className={styles.emptyCampaignBox}>
                 <Loader2 size={20} className={styles.spin} />
-                <span>Procesando &quot;{pendingFileName}&quot;… puede tardar varios segundos.</span>
+                <span>Subiendo &quot;{pendingFileName}&quot;…</span>
               </div>
             )}
+
+            {stage === 'procesando' && cargaEnProceso && (() => {
+              const total = cargaEnProceso.filas_leidas || 0;
+              const procesadas = Math.min(cargaEnProceso.filas_procesadas || 0, total);
+              const porcentaje = total > 0 ? Math.round((procesadas / total) * 100) : 0;
+              return (
+                <div className={styles.emptyCampaignBox}>
+                  <Loader2 size={20} className={styles.spin} />
+                  <span>Procesando &quot;{pendingFileName}&quot;…</span>
+                  <div className={layoutStyles.progressBarTrack}>
+                    <div className={layoutStyles.progressBarFill} style={{ width: `${porcentaje}%` }} />
+                  </div>
+                  <span className={layoutStyles.progressCaption}>
+                    {procesadas.toLocaleString('es-PE')} de {total.toLocaleString('es-PE')} filas procesadas ({porcentaje}%)
+                  </span>
+                  <span className={layoutStyles.progressCaption}>
+                    Puedes salir de esta página — la carga sigue en el servidor y el historial la mostrará como &quot;En proceso&quot; hasta que termine.
+                  </span>
+                </div>
+              );
+            })()}
 
             {(stage === 'preview' || stage === 'resultado') && (
               <>
