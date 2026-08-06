@@ -1124,3 +1124,42 @@
 .toggleRowsBtn:hover {
   background: #f7f7f5;
 }
+
+/* Carga asíncrona con progreso (POST /api/cargas responde de inmediato con
+   estado='procesando'; el frontend hace polling a GET /api/cargas/:id) */
+.progressBarTrack {
+  width: 100%;
+  max-width: 360px;
+  height: 8px;
+  background: #e7e5e4;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.progressCaption {
+  font-size: 13px;
+  color: #78716c;
+  text-align: center;
+}
+
+.historyProcesandoBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

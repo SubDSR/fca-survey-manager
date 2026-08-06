@@ -17,7 +17,7 @@ export async function listarCargasPorCampania(req, res) {
 
   const { data, error } = await supabase
     .from('carga_csv')
-    .select('id, archivo_nombre, filas_leidas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga')
+    .select('id, archivo_nombre, filas_leidas, filas_procesadas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga')
     .eq('campania_id', campania_id)
     .order('fecha_carga', { ascending: false });
 
@@ -30,10 +30,64 @@ export async function listarCargasPorCampania(req, res) {
   res.json({ cargas: data, total_acumulado });
 }
 
+// Corre el import real (presencial o virtual) y deja el resultado final en
+// carga_csv — se llama SIN await desde subirCarga, después de que la
+// respuesta HTTP ya se envió. Cualquier error de acá (incluida una falla de
+// red a mitad de una carga de miles de filas) NO tiene ya un cliente HTTP
+// escuchando: por eso el propio catch deja constancia en carga_csv.estado en
+// vez de propagar el error a una respuesta que nadie va a recibir.
+async function procesarCargaEnBackground({ esVirtual, filas, periodo, campania, carga, cursoGrupoDocenteId }) {
+  try {
+    const resultado = esVirtual
+      ? await importarFilasCsvVirtual(filas, { campaniaId: campania.id, cargaId: carga.id, cursoGrupoDocenteId })
+      : await importarFilasCsv(filas, periodo, campania.id, carga.id);
+    const { filasInsertadas, errores, omitidas, advertencias } = resultado;
+    // Solo la rama presencial puede producir pendientes (fuzzy matching) —
+    // importarFilasCsvVirtual no devuelve este campo, de ahí el default 0.
+    const filasPendientes = resultado.filasPendientes || 0;
+
+    const estadoFinal = errores.length === 0
+      ? 'completado'
+      : filasInsertadas === 0 && filasPendientes === 0
+        ? 'error'
+        : 'completado_con_errores';
+
+    const { error: errorUpdate } = await supabase
+      .from('carga_csv')
+      .update({
+        estado: estadoFinal,
+        filas_insertadas: filasInsertadas,
+        filas_procesadas: filas.length,
+        filas_omitidas: omitidas.length,
+        filas_error: errores.length,
+        filas_pendientes: filasPendientes,
+        errores: errores.length > 0 ? errores : null,
+        omitidas: omitidas.length > 0 ? omitidas : null,
+        advertencias: advertencias.length > 0 ? advertencias : null,
+      })
+      .eq('id', carga.id);
+    if (errorUpdate) throw errorUpdate;
+  } catch (err) {
+    await supabase
+      .from('carga_csv')
+      .update({ estado: 'error', mensaje_error: `Error insertando datos: ${err.message}` })
+      .eq('id', carga.id);
+  }
+}
+
 // POST /api/cargas — multipart/form-data: file (csv) + periodo_id
 //   + tipo='virtual' + curso_grupo_docente_id, para cargas de encuestas
 //   virtuales (CSV sin Programa/Docente/Curso por fila — ese contexto se
 //   fija una sola vez para todo el archivo, elegido en la UI).
+//
+// Responde en cuanto el archivo quedó validado y registrado (202, estado
+// 'procesando') — el procesamiento real (que para miles de filas puede
+// tardar minutos, ver investigación de lentitud) sigue en background y el
+// cliente debe hacer polling a GET /api/cargas/:id para conocer el
+// resultado. Antes esta ruta esperaba el import completo antes de
+// responder, lo que en cargas grandes chocaba con el timeout fijo de
+// cualquier proxy/túnel intermedio (ej. Cloudflare, 100s) mucho antes de
+// que el import terminara.
 export async function subirCarga(req, res) {
   const { periodo_id, tipo } = req.body;
   const archivo = req.file;
@@ -107,47 +161,33 @@ export async function subirCarga(req, res) {
     .single();
   if (errorCarga) return res.status(500).json({ error: errorCarga.message });
 
-  try {
-    const resultado = esVirtual
-      ? await importarFilasCsvVirtual(filas, { campaniaId: campania.id, cargaId: carga.id, cursoGrupoDocenteId })
-      : await importarFilasCsv(filas, periodo, campania.id, carga.id);
-    const { filasInsertadas, errores, omitidas, advertencias } = resultado;
-    // Solo la rama presencial puede producir pendientes (fuzzy matching) —
-    // importarFilasCsvVirtual no devuelve este campo, de ahí el default 0.
-    const filasPendientes = resultado.filasPendientes || 0;
+  res.status(202).json(carga);
 
-    const estadoFinal = errores.length === 0
-      ? 'completado'
-      : filasInsertadas === 0 && filasPendientes === 0
-        ? 'error'
-        : 'completado_con_errores';
+  procesarCargaEnBackground({ esVirtual, filas, periodo, campania, carga, cursoGrupoDocenteId }).catch((err) => {
+    // No debería llegar acá: procesarCargaEnBackground ya atrapa sus propios
+    // errores y los deja en carga_csv.estado. Esto es solo defensa en
+    // profundidad para que un fallo inesperado no quede como una promesa
+    // rechazada sin manejar.
+    console.error(`[carga ${carga.id}] error no manejado en background:`, err);
+  });
+}
 
-    const { data: cargaFinal, error: errorUpdate } = await supabase
-      .from('carga_csv')
-      .update({
-        estado: estadoFinal,
-        filas_insertadas: filasInsertadas,
-        filas_omitidas: omitidas.length,
-        filas_error: errores.length,
-        filas_pendientes: filasPendientes,
-        errores: errores.length > 0 ? errores : null,
-        omitidas: omitidas.length > 0 ? omitidas : null,
-        advertencias: advertencias.length > 0 ? advertencias : null,
-      })
-      .eq('id', carga.id)
-      .select()
-      .single();
-    if (errorUpdate) throw errorUpdate;
+// GET /api/cargas/:id — estado y progreso de UNA carga puntual. Pensado
+// para el polling del frontend mientras estado='procesando' (ver
+// subirCarga): misma forma que las filas de listarCargasPorCampania, más
+// filas_procesadas para la barra de progreso.
+export async function obtenerCarga(req, res) {
+  const { id } = req.params;
 
-    const status = estadoFinal === 'error' ? 422 : 201;
-    res.status(status).json(cargaFinal);
-  } catch (err) {
-    await supabase
-      .from('carga_csv')
-      .update({ estado: 'error', mensaje_error: err.message })
-      .eq('id', carga.id);
-    res.status(500).json({ error: `Error insertando datos: ${err.message}` });
-  }
+  const { data, error } = await supabase
+    .from('carga_csv')
+    .select('id, campania_id, archivo_nombre, filas_leidas, filas_procesadas, filas_insertadas, filas_omitidas, filas_error, filas_pendientes, estado, mensaje_error, visible, errores, omitidas, advertencias, fecha_carga, modalidad_carga')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Carga no encontrada' });
+
+  res.json(data);
 }
 
 // GET /api/cargas/detectar-contexto-virtual?nombre_archivo=... — sugiere
