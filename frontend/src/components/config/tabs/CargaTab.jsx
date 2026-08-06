@@ -16,6 +16,19 @@ function formatDateTime(value) {
   return new Date(value).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// Mismo plazo que backend/src/controllers/cargas.js (PLAZO_ELIMINACION_DIAS)
+// -- este chequeo en el frontend es solo cosmético (deshabilita el botón
+// para no invitar al click); la validación real que de verdad protege los
+// datos vive en el backend, que la vuelve a hacer sin confiar en esto.
+const PLAZO_ELIMINACION_DIAS = 7;
+const MENSAJE_PLAZO_ELIMINACION = `No se puede eliminar: han pasado más de ${PLAZO_ELIMINACION_DIAS} días desde la carga.`;
+
+function haPasadoElPlazoDeEliminacion(fechaCarga) {
+  if (!fechaCarga) return false;
+  const antiguedadMs = Date.now() - new Date(fechaCarga).getTime();
+  return antiguedadMs > PLAZO_ELIMINACION_DIAS * 24 * 60 * 60 * 1000;
+}
+
 // fecha_inicio/fecha_fin llegan como "YYYY-MM-DD": construir con hora fija
 // evita que el motor de zona horaria del navegador la corra un día.
 function formatDateOnly(value) {
@@ -245,6 +258,27 @@ export default function CargaTab() {
 
     return () => { cancelado = true; };
   }, [selectedPeriodId, refreshHistory]);
+
+  // Si el usuario subió una carga grande, navegó fuera (o recargó) y volvió
+  // acá, el historial ya la muestra como "En proceso" (el estado vive en la
+  // BD, no en el navegador -- ver refreshHistory arriba). Mientras siga
+  // procesándose, se refresca sola cada pocos segundos para que el badge y
+  // el conteo de filas procesadas avancen sin que el usuario tenga que
+  // recargar la página a mano. No usa refreshHistory (que prende
+  // historyLoading y parpadea el spinner del bloque) -- acá el refresco es
+  // silencioso.
+  const hayCargaEnProceso = uploads.some((u) => u.estado === 'procesando');
+  useEffect(() => {
+    if (!hayCargaEnProceso || !campania) return undefined;
+    const intervalo = setInterval(async () => {
+      const { ok, data } = await api.cargas.listar(campania.id);
+      if (ok) {
+        setUploads(data.cargas);
+        setTotalAcumulado(data.total_acumulado);
+      }
+    }, 4000);
+    return () => clearInterval(intervalo);
+  }, [hayCargaEnProceso, campania]);
 
   const toggleVisibilidad = async (carga) => {
     setVisibilityPendingId(carga.id);
@@ -596,6 +630,7 @@ export default function CargaTab() {
                   {uploads.map((u) => {
                     const tieneDetalle = u.filas_omitidas > 0 || u.filas_error > 0;
                     const expanded = expandedId === u.id;
+                    const bloqueadaPorPlazo = haPasadoElPlazoDeEliminacion(u.fecha_carga);
                     return (
                       <div key={u.id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg overflow-hidden">
                         <div className={`p-3 flex items-start gap-3 ${!u.visible ? 'opacity-60' : ''}`}>
@@ -608,13 +643,26 @@ export default function CargaTab() {
                               <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${u.modalidad_carga === 'virtual' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
                                 {u.modalidad_carga === 'virtual' ? 'Virtual' : 'Física'}
                               </span>
+                              {u.estado === 'procesando' && (
+                                <span className={layoutStyles.historyProcesandoBadge}>
+                                  <Loader2 size={9} className={styles.spin} /> En proceso
+                                </span>
+                              )}
                               {!u.visible && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant uppercase font-bold tracking-wider">Oculta</span>}
                             </div>
                             <div className="text-[11px] text-on-surface-variant leading-relaxed">
                               {formatDateTime(u.fecha_carga)}<br/>
-                              <span className="font-medium text-primary">+{u.filas_insertadas.toLocaleString('es-PE')} registros</span>
-                              {u.filas_omitidas > 0 && <span className="text-tertiary"> · {u.filas_omitidas} omitidas</span>}
-                              {u.filas_error > 0 && <span className="text-error"> · {u.filas_error} error</span>}
+                              {u.estado === 'procesando' ? (
+                                <span className="font-medium text-primary">
+                                  {(u.filas_procesadas || 0).toLocaleString('es-PE')} de {u.filas_leidas.toLocaleString('es-PE')} filas procesadas…
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="font-medium text-primary">+{u.filas_insertadas.toLocaleString('es-PE')} registros</span>
+                                  {u.filas_omitidas > 0 && <span className="text-tertiary"> · {u.filas_omitidas} omitidas</span>}
+                                  {u.filas_error > 0 && <span className="text-error"> · {u.filas_error} error</span>}
+                                </>
+                              )}
                             </div>
                           </div>
                           <div className="flex flex-col gap-1 shrink-0">
@@ -641,9 +689,14 @@ export default function CargaTab() {
                             </button>
                             <button
                               type="button"
-                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors"
-                              title="Eliminar carga"
-                              onClick={() => { setDeleteTarget(u); setDeleteError(''); }}
+                              className="w-7 h-7 flex items-center justify-center rounded hover:bg-error-container/20 text-error transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                              title={bloqueadaPorPlazo ? MENSAJE_PLAZO_ELIMINACION : 'Eliminar carga'}
+                              disabled={bloqueadaPorPlazo}
+                              onClick={() => {
+                                if (bloqueadaPorPlazo) return;
+                                setDeleteTarget(u);
+                                setDeleteError('');
+                              }}
                             >
                               <Trash2 size={14} />
                             </button>

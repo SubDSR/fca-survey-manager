@@ -53,7 +53,18 @@ export default function RevisionResolverModal({ revisionId, onClose, onResolved 
     setError('');
     setLoading(true);
     api.revisiones.obtener(revisionId)
-      .then(setDetalle)
+      .then((data) => {
+        setDetalle(data);
+        // Sugerencia de alta confianza (docente con un solo curso oficial
+        // en todo el sistema, ver backend/src/controllers/revisiones.js) --
+        // se PRE-selecciona la card y el tab "Reasignar", reusando el mismo
+        // elegirDestino() del click manual, pero no se auto-envía nada: el
+        // usuario sigue teniendo que apretar "Mover encuestas" él mismo.
+        if (data?.sugerencia_alta_confianza) {
+          setDestino(String(data.sugerencia_alta_confianza.curso_grupo_docente_id));
+          setAccion('reasignar');
+        }
+      })
       .catch((err) => setError(err.message || 'No se pudo cargar la incidencia.'))
       .finally(() => setLoading(false));
   }, [revisionId]);

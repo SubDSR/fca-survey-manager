@@ -160,6 +160,10 @@ export const api = {
       return request(`${BASE_URL}/api/cargas`, { method: 'POST', body: formData });
     },
     detectarContextoVirtual: (nombreArchivo) => request(`${BASE_URL}/api/cargas/detectar-contexto-virtual?${new URLSearchParams({ nombre_archivo: nombreArchivo })}`),
+    // Polling de una carga en curso (subir() ahora responde apenas se
+    // registra, con estado='procesando' — esto es lo que hay que consultar
+    // repetidamente hasta que estado sea un valor final).
+    obtener: (id) => request(`${BASE_URL}/api/cargas/${id}`),
     pendientes: (cargaId) => request(`${BASE_URL}/api/cargas/${cargaId}/pendientes`),
     resolverPendiente: (pendienteId, payload) => request(`${BASE_URL}/api/cargas/pendientes/${pendienteId}/resolver`, {
       method: 'POST',

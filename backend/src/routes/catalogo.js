@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listarCatalogoHuerfanos, listarCursoGrupoDocenteResidual } from '../controllers/catalogo.js';
+import { listarCatalogoHuerfanos, listarCursoGrupoDocenteResidual, consolidarSecciones } from '../controllers/catalogo.js';
 
 const router = Router();
 
@@ -34,5 +34,24 @@ router.get('/huerfanos', listarCatalogoHuerfanos);
  *         description: Lista de curso_grupo_docente residuales, más reciente primero
  */
 router.get('/curso-grupo-docente-residual', listarCursoGrupoDocenteResidual);
+
+/**
+ * @swagger
+ * /api/catalogo/consolidar-secciones:
+ *   post:
+ *     summary: Corre fn_autoconsolidar_secciones() bajo demanda (redirect no destructivo para vistas de reporte)
+ *     tags: [Catalogo]
+ *     description: >
+ *       Mapea secciones dispersas (es_carga_oficial=false) sin mapeo previo hacia
+ *       la sección oficial con menos encuestas del mismo docente+asignatura.
+ *       Solo afecta curso_grupo_docente_consolidacion (presentación en reportes) —
+ *       NO mueve ninguna encuesta ni resuelve incidencias de revision_asignacion,
+ *       que siguen requiriendo revisión manual vía GET/POST /api/revisiones.
+ *       Idempotente: correrla de nuevo sin nada nuevo que mapear devuelve 0.
+ *     responses:
+ *       200:
+ *         description: "{ nuevas_consolidaciones: number, nota: string }"
+ */
+router.post('/consolidar-secciones', consolidarSecciones);
 
 export default router;

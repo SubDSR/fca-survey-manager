@@ -91,13 +91,16 @@ export default function SubirVirtualPage() {
   }, [periodo]);
 
   // ---- Subida / archivo ----
-  const [stage, setStage] = useState('idle'); // idle | preview | uploading | resultado | error
+  // idle | preview | uploading | procesando | resultado | error -- ver el
+  // mismo patrón (y su comentario) en SubirCsvPage.jsx.
+  const [stage, setStage] = useState('idle');
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [pendingFile, setPendingFile] = useState(null);
   const [pendingFileName, setPendingFileName] = useState('');
   const [parsedRows, setParsedRows] = useState([]);
   const [resultado, setResultado] = useState(null);
+  const [cargaEnProceso, setCargaEnProceso] = useState(null);
   const [showAllRows, setShowAllRows] = useState(false);
 
   // ---- Detección automática de contexto (a partir del nombre del archivo) ----
@@ -266,6 +269,7 @@ export default function SubirVirtualPage() {
     setParsedRows([]);
     setPendingFile(null);
     setResultado(null);
+    setCargaEnProceso(null);
     setDeteccion(null);
     setVirtualDocente(null);
     setVirtualCurso(null);
@@ -282,15 +286,41 @@ export default function SubirVirtualPage() {
       setErrorMessage((data && data.error) || 'No se pudo subir el archivo.');
       return;
     }
-    if (!ok && status !== 422) {
+    if (!ok) {
       setStage('error');
       setErrorMessage((data && data.error) || 'Error del servidor al procesar la carga.');
       return;
     }
 
-    setResultado(data);
-    setStage('resultado');
+    // 202: registrada con estado='procesando' -- de acá en más, polling.
+    setCargaEnProceso(data);
+    setStage('procesando');
   };
+
+  const cargaEnProcesoId = cargaEnProceso?.id;
+  useEffect(() => {
+    if (stage !== 'procesando' || !cargaEnProcesoId) return undefined;
+    let cancelado = false;
+
+    const consultar = async () => {
+      const { ok, data } = await api.cargas.obtener(cargaEnProcesoId);
+      if (cancelado || !ok) return;
+      setCargaEnProceso(data);
+      if (data.estado === 'procesando') return;
+
+      if (data.estado === 'error' && data.mensaje_error) {
+        setStage('error');
+        setErrorMessage(data.mensaje_error);
+        return;
+      }
+      setResultado(data);
+      setStage('resultado');
+    };
+
+    consultar();
+    const intervalo = setInterval(consultar, 3000);
+    return () => { cancelado = true; clearInterval(intervalo); };
+  }, [stage, cargaEnProcesoId]);
 
   const erroresPorFila = useMemo(() => new Map((resultado?.errores || []).map((e) => [e.fila, e.mensaje])), [resultado]);
 
@@ -425,10 +455,30 @@ export default function SubirVirtualPage() {
             <div className={styles.card}>
               <div className={styles.emptyCampaignBox}>
                 <Loader2 size={20} className={styles.spin} />
-                <span>Procesando &quot;{pendingFileName}&quot;… puede tardar varios segundos.</span>
+                <span>Subiendo &quot;{pendingFileName}&quot;…</span>
               </div>
             </div>
           )}
+
+          {stage === 'procesando' && cargaEnProceso && (() => {
+            const total = cargaEnProceso.filas_leidas || 0;
+            const procesadas = Math.min(cargaEnProceso.filas_procesadas || 0, total);
+            const porcentaje = total > 0 ? Math.round((procesadas / total) * 100) : 0;
+            return (
+              <div className={styles.card}>
+                <div className={styles.emptyCampaignBox}>
+                  <Loader2 size={20} className={styles.spin} />
+                  <span>Procesando &quot;{pendingFileName}&quot;…</span>
+                  <div className={layoutStyles.progressBarTrack}>
+                    <div className={layoutStyles.progressBarFill} style={{ width: `${porcentaje}%` }} />
+                  </div>
+                  <span className={layoutStyles.progressCaption}>
+                    {procesadas.toLocaleString('es-PE')} de {total.toLocaleString('es-PE')} filas procesadas ({porcentaje}%)
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {(stage === 'preview' || stage === 'resultado') && (
             <>

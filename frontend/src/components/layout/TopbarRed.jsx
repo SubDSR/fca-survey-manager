@@ -139,7 +139,14 @@ export default function TopbarRed({ onSelectDocente }) {
               ) : (
                 revisiones.map((r) => (
                   <div key={r.id} className="px-3 py-2 border-b border-slate-100 last:border-b-0">
-                    <div className="text-xs font-semibold text-slate-700">{r.docente}</div>
+                    <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 flex-wrap">
+                      {r.docente}
+                      {r.sugerencia_alta_confianza && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-primary/10 text-primary">
+                          Sugerencia: único curso oficial
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-slate-500 mt-0.5">
                       {r.curso} · {r.n_encuestas} encuesta{r.n_encuestas === 1 ? '' : 's'}
                     </div>
