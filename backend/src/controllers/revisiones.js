@@ -9,6 +9,53 @@ function respuestaError(res, error) {
   return res.status(500).json({ error: error.message });
 }
 
+// Trae, por cada docente_id dado, su lista completa de curso_grupo_docente
+// con es_carga_oficial=true en TODO el sistema (sin acotar por programa ni
+// asignatura). Mismo shape que opcionesReasignar en obtenerRevision, para
+// no tener dos formas distintas del mismo objeto "curso oficial" entre
+// endpoints.
+async function cargarCursosOficialesPorDocente(docenteIds) {
+  if (docenteIds.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('curso_grupo_docente')
+    .select(
+      'id, docente_id, curso_grupo:curso_grupo_id(asignatura:asignatura_id(nombre), grupo:grupo_id(ciclo, seccion, programa:programa_id(nombre_corto)))'
+    )
+    .in('docente_id', docenteIds)
+    .eq('es_carga_oficial', true);
+  if (error) throw error;
+
+  const porDocente = new Map();
+  (data || []).forEach((o) => {
+    const curso = {
+      curso_grupo_docente_id: o.id,
+      curso: o.curso_grupo?.asignatura?.nombre,
+      programa: o.curso_grupo?.grupo?.programa?.nombre_corto,
+      ciclo: o.curso_grupo?.grupo?.ciclo,
+      seccion: o.curso_grupo?.grupo?.seccion,
+    };
+    const lista = porDocente.get(o.docente_id) || [];
+    lista.push(curso);
+    porDocente.set(o.docente_id, lista);
+  });
+  return porDocente;
+}
+
+// Si el docente de la incidencia tiene EXACTAMENTE un curso_grupo_docente
+// oficial en todo el sistema (sin importar programa/asignatura — "¿cuántos
+// cursos dicta este docente en total?", no solo dentro de la misma
+// asignatura de la incidencia), no hay ambigüedad real de a dónde
+// reasignar: se ofrece como sugerencia de alta confianza, prellenada en el
+// frontend, pero SIGUE requiriendo confirmación humana explícita — mismo
+// POST /api/revisiones/:id/resolver de siempre, mismo resuelto_por/
+// resuelto_en que cualquier otra resolución. Con 0 cursos oficiales no hay
+// destino posible (ni con esta regla ni resolviendo a mano); con 2+ sigue
+// habiendo que elegir cuál — en ambos casos, null.
+function calcularSugerenciaAltaConfianza(cursosOficiales) {
+  if (!cursosOficiales || cursosOficiales.length !== 1) return null;
+  return cursosOficiales[0];
+}
+
 // Combina revision_asignacion (tabla de tracking mutable) con
 // v_asignaciones_sin_respaldo (foto de la realidad actual en
 // curso_grupo_docente + encuesta) por curso_grupo_docente_id. La vista
@@ -24,12 +71,20 @@ async function combinarConDetalle(revisiones) {
     .in('curso_grupo_docente_id', ids);
   if (error) throw error;
   const detallePorCgd = new Map((detalle || []).map((d) => [d.curso_grupo_docente_id, d]));
-  return revisiones
+  const combinadas = revisiones
     .map((r) => ({ ...r, ...(detallePorCgd.get(r.curso_grupo_docente_id) || {}) }))
     // Una incidencia resuelta (reasignada) ya no tiene encuestas bajo su
     // curso_grupo_docente_id original, así que desaparece de la vista de
     // detección — se omite en vez de devolver una fila a medias.
     .filter((r) => r.docente !== undefined);
+
+  const docenteIds = [...new Set(combinadas.map((r) => r.docente_id))];
+  const cursosOficialesPorDocente = await cargarCursosOficialesPorDocente(docenteIds);
+
+  return combinadas.map((r) => ({
+    ...r,
+    sugerencia_alta_confianza: calcularSugerenciaAltaConfianza(cursosOficialesPorDocente.get(r.docente_id)),
+  }));
 }
 
 // GET /api/revisiones?estado=pendiente
@@ -82,7 +137,11 @@ export async function obtenerRevision(req, res) {
     }));
   }
 
-  res.json({ ...revision, ...(detalle || {}), opcionesReasignar });
+  // Misma regla que combinarConDetalle (GET /api/revisiones): un solo
+  // curso oficial en opcionesReasignar = ese es, sin ambigüedad.
+  const sugerenciaAltaConfianza = calcularSugerenciaAltaConfianza(opcionesReasignar);
+
+  res.json({ ...revision, ...(detalle || {}), opcionesReasignar, sugerencia_alta_confianza: sugerenciaAltaConfianza });
 }
 
 // POST /api/revisiones/:id/resolver
