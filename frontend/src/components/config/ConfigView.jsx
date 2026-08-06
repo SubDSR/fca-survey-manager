@@ -26,6 +26,13 @@ export default function ConfigView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const resolverTargetId = searchParams.get('revision');
 
+  // /configuracion (sin sub-ruta) redirige por defecto a "carga" -- pero si
+  // se llega con ?revision=<id> (desde la campana de TopbarRed, o una URL
+  // directa/recarga con el param ya puesto), el destino temáticamente
+  // correcto es "docentes" (la incidencia es sobre un docente), no "carga".
+  // Sin el param, el default general no cambia.
+  const defaultSubtab = resolverTargetId ? 'docentes' : 'carga';
+
   const cerrarResolver = () => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -37,14 +44,14 @@ export default function ConfigView() {
   return (
     <div className="min-h-full bg-surface text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container p-margin-mobile md:p-margin-desktop">
       <Routes>
-        <Route index element={<Navigate to={{ pathname: 'carga', search: location.search }} replace />} />
+        <Route index element={<Navigate to={{ pathname: defaultSubtab, search: location.search }} replace />} />
         <Route path="carga" element={<CargaTab />} />
         <Route path="carga/subir-csv" element={<SubirCsvPage />} />
         <Route path="carga/subir-virtual" element={<SubirVirtualPage />} />
         <Route path="docentes" element={<DocentesTab />} />
         <Route path="cursos" element={<CursosTab />} />
         <Route path="programas" element={<ProgramasTab />} />
-        <Route path="*" element={<Navigate to={{ pathname: 'carga', search: location.search }} replace />} />
+        <Route path="*" element={<Navigate to={{ pathname: defaultSubtab, search: location.search }} replace />} />
       </Routes>
 
       <RevisionResolverModal
