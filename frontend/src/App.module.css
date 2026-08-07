@@ -1,1 +1,1 @@
-.shell{max-width:1280px; margin:0 auto; padding:20px 24px 60px;}
+.shell{width:100%; margin:0 auto; padding:20px max(24px, 4vw) 60px;}

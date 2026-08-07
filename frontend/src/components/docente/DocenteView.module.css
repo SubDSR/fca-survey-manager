@@ -128,7 +128,7 @@
 
 .emptyState { padding: 40px; text-align: center; color: var(--text-soft); font-size: 13px; }
 
-.chartsGrid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 16px; }
+.chartsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; margin-top: 16px; }
 
 .btnMoreInfo {
   display: inline-flex; align-items: center; gap: 4px; margin-top: 10px;
