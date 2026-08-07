@@ -14,8 +14,9 @@ const PAGE_SIZE = 9;
 
 function condicionColor(nombre) {
   const n = (nombre || '').toLowerCase();
-  if (n.includes('nombrado')) return '#34A853';
-  if (n.includes('contratado')) return '#2F6FB0';
+  if (n.includes('nombrado - of')) return '#2563eb';
+  if (n.includes('nombrado')) return '#16a34a';
+  if (n.includes('contratado')) return '#dc2626';
   return '#94A3B8';
 }
 
@@ -214,19 +215,47 @@ export default function DocentesTab() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter mb-stack-lg">
             {pageItems.map((d) => {
-              const isNombrado = (d.condicion || '').toLowerCase().includes('nombrado');
-              const isContratado = (d.condicion || '').toLowerCase().includes('contratado');
-              const avatarColorClass = isNombrado ? 'bg-tertiary-container/10 text-tertiary border-tertiary/20' : 'bg-primary-container/10 text-primary border-primary/20';
-              const nameHoverClass = isNombrado ? 'group-hover:text-tertiary' : 'group-hover:text-primary';
+              const condLower = (d.condicion || '').toLowerCase();
+              const isNombradoOF = condLower.includes('nombrado - of');
+              const isNombrado = !isNombradoOF && condLower.includes('nombrado');
+              const isContratado = condLower.includes('contratado');
+              
+              const avatarColorClass = isNombrado 
+                ? 'bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20' 
+                : isNombradoOF
+                  ? 'bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20'
+                  : isContratado
+                    ? 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20'
+                    : 'bg-primary-container/10 text-primary border-primary/20';
+                    
+              const nameHoverClass = isNombrado 
+                ? 'group-hover:text-[#16a34a]' 
+                : isNombradoOF
+                  ? 'group-hover:text-[#2563eb]'
+                  : isContratado
+                    ? 'group-hover:text-[#dc2626]'
+                    : 'group-hover:text-primary';
               
               const tagColorClass = isNombrado 
-                ? 'bg-tertiary-container/10 text-tertiary border-tertiary/20'
+                ? 'bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20'
+                : isNombradoOF
+                  ? 'bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20'
                 : isContratado 
-                  ? 'bg-[#0284c7]/10 text-[#0284c7] border-[#0284c7]/20'
+                  ? 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20'
                   : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30';
-              const dotColorClass = isNombrado ? 'bg-tertiary' : isContratado ? 'bg-[#0284c7]' : 'bg-on-surface-variant';
+                  
+              const dotColorClass = isNombrado 
+                ? 'bg-[#16a34a]' 
+                : isNombradoOF 
+                  ? 'bg-[#2563eb]' 
+                : isContratado 
+                  ? 'bg-[#dc2626]' 
+                  : 'bg-on-surface-variant';
 
-              const initial = d.nombre_completo.charAt(0).toUpperCase();
+              const parts = d.nombre_completo.split(',');
+              const initial = parts.length > 1 
+                ? (parts[0].trim().charAt(0) + parts[1].trim().charAt(0)).toUpperCase()
+                : parts[0].trim().substring(0, 2).toUpperCase();
 
               return (
                 <div key={d.id} className={`glass-card rounded-xl p-6 hover:translate-y-[-4px] transition-all duration-300 group ${!d.activo ? 'border-error-container opacity-75' : ''}`}>
