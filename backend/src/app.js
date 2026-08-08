@@ -14,6 +14,7 @@ import revisionesRouter from './routes/revisiones.js';
 import auditLogRouter from './routes/auditLog.js';
 import politicaEvaluacionRouter from './routes/politicaEvaluacion.js';
 import catalogoRouter from './routes/catalogo.js';
+import asignacionesRouter from './routes/asignaciones.js';
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use('/api/revisiones', revisionesRouter);
 app.use('/api/audit-log', auditLogRouter);
 app.use('/api/politica-evaluacion', politicaEvaluacionRouter);
 app.use('/api/catalogo', catalogoRouter);
+app.use('/api/asignaciones', asignacionesRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend escuchando en el puerto ${PORT}`);

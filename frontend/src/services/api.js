@@ -191,6 +191,22 @@ export const api = {
     }),
     eliminar: (id) => request(`${BASE_URL}/api/cargas/${id}`, { method: 'DELETE' }),
   },
+  catalogo: {
+    consolidarSecciones: () => request(`${BASE_URL}/api/catalogo/consolidar-secciones`, { method: 'POST' }),
+  },
+  asignaciones: {
+    listar: (params = {}) => {
+      const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      ).toString();
+      return fetchJson(`${BASE_URL}/api/asignaciones${query ? `?${query}` : ''}`);
+    },
+    actualizar: (id, payload) => request(`${BASE_URL}/api/asignaciones/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  },
   auditLog: {
     listar: (tabla, registroId) => fetchJson(`${BASE_URL}/api/audit-log?tabla=${tabla}&registro_id=${registroId}`),
   },

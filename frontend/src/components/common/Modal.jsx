@@ -1,6 +1,6 @@
 import styles from './Modal.module.css';
 
-export default function Modal({ open, title, subtitle, onClose, children, wide }) {
+export default function Modal({ open, title, subtitle, onClose, children, wide, overflowVisible }) {
   if (!open) return null;
 
   const boxClassName = wide ? `${styles.modalBox} ${styles.modalBoxWide}` : styles.modalBox;
@@ -22,7 +22,7 @@ export default function Modal({ open, title, subtitle, onClose, children, wide }
             &times;
           </button>
         </div>
-        <div className={styles.modalBody}>{children}</div>
+        <div className={`${styles.modalBody} ${overflowVisible ? styles.overflowVisible : ''}`}>{children}</div>
       </div>
     </div>
   );

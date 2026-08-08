@@ -19,5 +19,6 @@
 }
 .modalClose:hover{background:var(--border); color:var(--text);}
 .modalBody{padding:8px 24px 20px; overflow-y:auto;}
+.overflowVisible{overflow:visible;}
 
 .modalBoxWide{max-width:1080px;}

@@ -22,6 +22,7 @@ const NAV_ITEMS = [
       { to: '/configuracion/docentes', label: 'Docentes' },
       { to: '/configuracion/cursos', label: 'Catálogo de Cursos' },
       { to: '/configuracion/programas', label: 'Catálogo de Programas' },
+      { to: '/configuracion/asignaciones', label: 'Asignaciones' },
     ],
   },
 ];

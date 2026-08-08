@@ -6,6 +6,7 @@ import SubirVirtualPage from './tabs/SubirVirtualPage.jsx';
 import DocentesTab from './tabs/DocentesTab.jsx';
 import CursosTab from './tabs/CursosTab.jsx';
 import ProgramasTab from './tabs/ProgramasTab.jsx';
+import AsignacionesTab from './tabs/AsignacionesTab.jsx';
 import styles from './ConfigView.module.css';
 
 // Los 4 sub-tabs (Carga/Docentes/Cursos/Programas) traen su propio
@@ -51,6 +52,7 @@ export default function ConfigView() {
         <Route path="docentes" element={<DocentesTab />} />
         <Route path="cursos" element={<CursosTab />} />
         <Route path="programas" element={<ProgramasTab />} />
+        <Route path="asignaciones" element={<AsignacionesTab />} />
         <Route path="*" element={<Navigate to={{ pathname: defaultSubtab, search: location.search }} replace />} />
       </Routes>
 
