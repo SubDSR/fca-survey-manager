@@ -57,7 +57,8 @@ function formatearTamano(bytes) {
 export default function SubirVirtualPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const fileInputRef = useRef(null);
+  const csvFileInputRef = useRef(null);
+  const zipFileInputRef = useRef(null);
 
   const [periodo, setPeriodo] = useState(null);
   const [periodoLoading, setPeriodoLoading] = useState(true);
@@ -108,7 +109,8 @@ export default function SubirVirtualPage() {
   // idle | preview | uploading | procesando | resultado | error -- ver el
   // mismo patrón (y su comentario) en SubirCsvPage.jsx.
   const [stage, setStage] = useState('idle');
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingCsv, setIsDraggingCsv] = useState(false);
+  const [isDraggingZip, setIsDraggingZip] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [pendingFile, setPendingFile] = useState(null);
   const [pendingFileName, setPendingFileName] = useState('');
@@ -304,15 +306,41 @@ export default function SubirVirtualPage() {
     reader.readAsText(file);
   };
 
-  const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
-  const onDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
-  const onDrop = (e) => {
+  const onDragOverCsv = (e) => { e.preventDefault(); setIsDraggingCsv(true); };
+  const onDragLeaveCsv = (e) => { e.preventDefault(); setIsDraggingCsv(false); };
+  const onDropCsv = (e) => {
     e.preventDefault();
-    setIsDragging(false);
+    setIsDraggingCsv(false);
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (file) {
+      if (file.name.toLowerCase().endsWith('.zip')) {
+        setStage('error');
+        setErrorMessage(`Por favor, arrastra los archivos .zip en el cuadro de "Subir carga por lote".`);
+        return;
+      }
+      handleFile(file);
+    }
   };
-  const triggerFilePicker = () => fileInputRef.current && fileInputRef.current.click();
+
+  const onDragOverZip = (e) => { e.preventDefault(); setIsDraggingZip(true); };
+  const onDragLeaveZip = (e) => { e.preventDefault(); setIsDraggingZip(false); };
+  const onDropZip = (e) => {
+    e.preventDefault();
+    setIsDraggingZip(false);
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) {
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        setStage('error');
+        setErrorMessage(`Por favor, arrastra los archivos .csv individuales en el cuadro de "Subir encuesta individual".`);
+        return;
+      }
+      handleFile(file);
+    }
+  };
+
+  const triggerCsvFilePicker = () => csvFileInputRef.current && csvFileInputRef.current.click();
+  const triggerZipFilePicker = () => zipFileInputRef.current && zipFileInputRef.current.click();
+  
   const onFileInputChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (file) handleFile(file);
@@ -522,23 +550,43 @@ export default function SubirVirtualPage() {
           )}
 
           {campaniaChecked && campania && stage === 'idle' && (
-            <div className={styles.card}>
-              <div
-                className={`${styles.dropzone} ${isDragging ? styles.dropzoneDragging : ''}`}
-                onDragOver={onDragOver}
-                onDragLeave={onDragLeave}
-                onDrop={onDrop}
-              >
-                <div className={styles.dropzoneIconBox}><UploadCloud size={24} strokeWidth={1.8} /></div>
-                <p className={styles.dropzoneTitle}>Arrastra tu archivo CSV o ZIP aquí</p>
-                <p className={styles.dropzoneText}>
-                  o <button type="button" className={styles.dropzoneLink} onClick={triggerFilePicker}>selecciona desde tu equipo</button>
-                </p>
-                <p className={styles.dropzoneHint}>
-                  Un .csv (máx. 50 MB) o un .zip con varios .csv (máx. 200 MB) — el docente, curso, ciclo y sección se detectan
-                  automáticamente del nombre de cada archivo.
-                </p>
-                <input ref={fileInputRef} type="file" accept=".csv,.zip" className={styles.hiddenFileInput} onChange={onFileInputChange} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              <div className={styles.card} style={{ display: 'flex', flexDirection: 'column', margin: 0, height: '100%' }}>
+                <div
+                  className={`${styles.dropzone} ${isDraggingCsv ? styles.dropzoneDragging : ''}`}
+                  onDragOver={onDragOverCsv}
+                  onDragLeave={onDragLeaveCsv}
+                  onDrop={onDropCsv}
+                >
+                  <div className={styles.dropzoneIconBox}><FileText size={24} strokeWidth={1.8} /></div>
+                  <p className={styles.dropzoneTitle}>Subir encuesta individual (CSV)</p>
+                  <p className={styles.dropzoneText}>
+                    Arrastra tu archivo CSV aquí o <button type="button" className={styles.dropzoneLink} onClick={triggerCsvFilePicker}>selecciona desde tu equipo</button>
+                  </p>
+                  <p className={styles.dropzoneHint}>
+                    Un archivo .csv (máx. 50 MB) — el docente, curso, ciclo y sección se detectan automáticamente de su nombre.
+                  </p>
+                  <input ref={csvFileInputRef} type="file" accept=".csv" className={styles.hiddenFileInput} onChange={onFileInputChange} />
+                </div>
+              </div>
+
+              <div className={styles.card} style={{ display: 'flex', flexDirection: 'column', margin: 0, height: '100%' }}>
+                <div
+                  className={`${styles.dropzone} ${isDraggingZip ? styles.dropzoneDragging : ''}`}
+                  onDragOver={onDragOverZip}
+                  onDragLeave={onDragLeaveZip}
+                  onDrop={onDropZip}
+                >
+                  <div className={styles.dropzoneIconBox}><Archive size={24} strokeWidth={1.8} /></div>
+                  <p className={styles.dropzoneTitle}>Subir carga por lote (ZIP)</p>
+                  <p className={styles.dropzoneText}>
+                    Arrastra tu archivo ZIP aquí o <button type="button" className={styles.dropzoneLink} onClick={triggerZipFilePicker}>selecciona desde tu equipo</button>
+                  </p>
+                  <p className={styles.dropzoneHint}>
+                    Un archivo .zip con varios .csv (máx. 200 MB) — cada CSV detectará su propio contexto automáticamente.
+                  </p>
+                  <input ref={zipFileInputRef} type="file" accept=".zip" className={styles.hiddenFileInput} onChange={onFileInputChange} />
+                </div>
               </div>
             </div>
           )}
